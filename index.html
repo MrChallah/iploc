@@ -93,7 +93,6 @@
         
         // Build address string, prioritizing the most specific location
         const parts = [
-          road || area,
           city,
           state,
           country
@@ -117,7 +116,6 @@
       const geo = await res.json();
       const addr = geo.address;
       const parts = [
-        addr.road || addr.suburb || "",
         addr.city || addr.town || addr.village || "",
         addr.state || "",
         addr.country || ""
