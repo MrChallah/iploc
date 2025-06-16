@@ -1,0 +1,609 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+  html,body{margin:0;padding:0;background:transparent;color:#fff;font-family:sans-serif;}
+  #info{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,0.04);padding:12px;border-radius:8px;}
+  .row{display:flex;align-items:center;font-size:15px;font-weight:500;text-shadow:0 0 4px #000,0 0 8px #000;}
+  .row i{width:18px;margin-right:6px;text-align:center;}
+  </style></head><body>
+  
+  <div id="info">
+    <div class="row"><i class="fa-regular fa-clock"></i><span id="time">--:--:--</span></div>
+    <div class="row">
+      <i class="fa-solid fa-location-dot"></i>
+      <span id="place">Waiting…</span>
+    </div>
+    <div class="row"><i class="fa-solid fa-cloud"></i><span id="weather">--°C</span></div>
+  </div>
+  
+  <script>
+  const placeEl = document.getElementById('place');
+  const weatherEl = document.getElementById('weather');
+  const GOOGLE_GEO_KEY = 'AIzaSyBFwxZu_EqPgs7pEqk1uHn1f46F6vUoEFU';
+  
+  let lastKnownLocation = null;
+  let gpsSuccessful = false;
+  let gpsAttempted = false;
+  let consecutiveGPSFailures = 0;
+  
+  // Detect if we're on mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  // Detect if we're in an app environment (like PRISM Live)
+  const isInApp = !window.location.href.startsWith('http') || 
+                  window.navigator.standalone === true ||
+                  window.matchMedia('(display-mode: standalone)').matches ||
+                  document.referrer.includes('android-app://') ||
+                  /wv|WebView/i.test(navigator.userAgent) ||
+                  navigator.userAgent.includes('PRISM') ||
+                  navigator.userAgent.includes('Live') ||
+                  navigator.userAgent.includes('NAVER') ||
+                  window.location.protocol === 'file:' ||
+                  window.location.hostname === '' ||
+                  !window.location.hostname ||
+                  window.location.href.includes('prism') ||
+                  window.location.href.includes('live') ||
+                  // More aggressive detection for streaming apps
+                  window.outerWidth === window.innerWidth ||
+                  window.chrome === undefined ||
+                  !window.chrome;
+  
+  function tick(){
+    const now = new Date();
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateString = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    
+    document.getElementById('time').textContent = `${dayName}, ${dateString}, ${timeString}`;
+  }
+  tick(); setInterval(tick, 1000);
+  
+  async function reverseGeocode(lat, lon){
+    try {
+      // Use Google's reverse geocoding API for better English translations
+      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=street_address|route|neighborhood|locality|administrative_area_level_1|country`);
+      const data = await res.json();
+      
+      if (data.status === 'OK' && data.results.length > 0) {
+        const result = data.results[0];
+        const components = result.address_components;
+        
+        // Extract components in preferred order
+        let road = '';
+        let area = '';
+        let city = '';
+        let state = '';
+        let country = '';
+        
+        components.forEach(component => {
+          const types = component.types;
+          if (types.includes('route') || types.includes('street_address')) {
+            road = component.long_name;
+          } else if (types.includes('neighborhood') || types.includes('sublocality')) {
+            area = component.long_name;
+          } else if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+            city = component.long_name;
+          } else if (types.includes('administrative_area_level_1')) {
+            state = component.long_name;
+          } else if (types.includes('country')) {
+            country = component.long_name;
+          }
+        });
+        
+        // Build address string, prioritizing the most specific location
+        const parts = [
+          road || area,
+          city,
+          state,
+          country
+        ].filter(Boolean);
+        
+        return parts.join(", ");
+      }
+      
+      // Fallback to formatted address if component parsing fails
+      if (data.results.length > 0) {
+        return data.results[0].formatted_address;
+      }
+      
+      throw new Error('No results from Google Geocoding');
+      
+    } catch (error) {
+      console.warn('Google geocoding failed, falling back to Nominatim:', error);
+      
+      // Fallback to Nominatim with additional language parameters
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en&addressdetails=1&extratags=1`);
+      const geo = await res.json();
+      const addr = geo.address;
+      const parts = [
+        addr.road || addr.suburb || "",
+        addr.city || addr.town || addr.village || "",
+        addr.state || "",
+        addr.country || ""
+      ].filter(Boolean);
+      return parts.join(", ");
+    }
+  }
+  
+  async function fetchWeather(lat, lon){
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+      const j = await r.json();
+      const c = Math.round(j.current.temperature_2m);
+      const f = Math.round(c * 9 / 5 + 32);
+      
+      // Weather condition mapping for Open-Meteo weather codes
+      const weatherCodes = {
+        0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
+        45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle', 
+        55: 'Dense Drizzle', 56: 'Light Freezing Drizzle', 57: 'Dense Freezing Drizzle',
+        61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain', 66: 'Light Freezing Rain', 
+        67: 'Heavy Freezing Rain', 71: 'Slight Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
+        77: 'Snow Grains', 80: 'Slight Rain Showers', 81: 'Moderate Rain Showers', 
+        82: 'Violent Rain Showers', 85: 'Slight Snow Showers', 86: 'Heavy Snow Showers',
+        95: 'Thunderstorm', 96: 'Thunderstorm with Slight Hail', 99: 'Thunderstorm with Heavy Hail'
+      };
+      
+      const desc = weatherCodes[j.current.weather_code] || 'Unknown';
+      weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
+    } catch (error) {
+      console.error('Weather fetch failed:', error);
+      weatherEl.textContent = "Weather N/A";
+    }
+  }
+  
+  // Method 1: Try IRL Pro location data
+  function getIRLProLocation() {
+    if (window.locationData && window.locationData.latitude && window.locationData.longitude) {
+      return {
+        lat: window.locationData.latitude,
+        lon: window.locationData.longitude,
+        source: "IRL Pro GPS"
+      };
+    }
+    return null;
+  }
+  
+  // Method 1.5: Try PRISM Live location data
+  function getPRISMLocation() {
+    // Check for various possible PRISM Live location interfaces
+    if (window.prismLocationData && window.prismLocationData.latitude && window.prismLocationData.longitude) {
+      return {
+        lat: window.prismLocationData.latitude,
+        lon: window.prismLocationData.longitude,
+        source: "PRISM Live GPS"
+      };
+    }
+    
+    // Alternative PRISM Live interfaces
+    if (window.prism && window.prism.location && window.prism.location.latitude && window.prism.location.longitude) {
+      return {
+        lat: window.prism.location.latitude,
+        lon: window.prism.location.longitude,
+        source: "PRISM Live GPS"
+      };
+    }
+    
+    // Check for PRISM Live GPS data in different format
+    if (window.PRISM_GPS && window.PRISM_GPS.lat && window.PRISM_GPS.lon) {
+      return {
+        lat: window.PRISM_GPS.lat,
+        lon: window.PRISM_GPS.lon,
+        source: "PRISM Live GPS"
+      };
+    }
+    
+    // Check webkit message handlers (common in mobile apps)
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.locationHandler) {
+      // This would require a callback mechanism, but we can try to access cached data
+      if (window.webkit.lastKnownLocation && window.webkit.lastKnownLocation.latitude && window.webkit.lastKnownLocation.longitude) {
+        return {
+          lat: window.webkit.lastKnownLocation.latitude,
+          lon: window.webkit.lastKnownLocation.longitude,
+          source: "PRISM Live GPS (WebKit)"
+        };
+      }
+    }
+    
+    // Check for Android interface
+    if (window.Android && window.Android.getLatitude && window.Android.getLongitude) {
+      try {
+        const lat = parseFloat(window.Android.getLatitude());
+        const lon = parseFloat(window.Android.getLongitude());
+        if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+          return {
+            lat: lat,
+            lon: lon,
+            source: "PRISM Live GPS (Android)"
+          };
+        }
+      } catch (e) {
+        console.warn('Android location interface failed:', e);
+      }
+    }
+    
+    return null;
+  }
+  
+  // Method 1.6: Actively request location from PRISM Live
+  function requestPRISMLocation() {
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+      
+      // Set timeout to avoid hanging
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error('PRISM Live location request timeout'));
+        }
+      }, 5000);
+      
+      // Try WebKit message handler
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.locationHandler) {
+        try {
+          window.webkit.messageHandlers.locationHandler.postMessage({action: 'getCurrentLocation'});
+          
+          // Set up listener for response
+          window.prismLocationCallback = function(locationData) {
+            if (!resolved && locationData && locationData.latitude && locationData.longitude) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve({
+                lat: locationData.latitude,
+                lon: locationData.longitude,
+                source: "PRISM Live GPS (Requested)"
+              });
+            }
+          };
+          
+          // Also check if location is immediately available
+          setTimeout(() => {
+            const location = getPRISMLocation();
+            if (!resolved && location) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve(location);
+            }
+          }, 100);
+          
+        } catch (e) {
+          console.warn('WebKit location request failed:', e);
+        }
+      }
+      
+      // Try Android interface
+      if (window.Android && window.Android.requestLocation) {
+        try {
+          window.Android.requestLocation();
+          
+          // Check for location after a brief delay
+          setTimeout(() => {
+            const location = getPRISMLocation();
+            if (!resolved && location) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve(location);
+            }
+          }, 1000);
+          
+        } catch (e) {
+          console.warn('Android location request failed:', e);
+        }
+      }
+      
+      // Try posting messages to parent frame (if in iframe)
+      try {
+        window.parent.postMessage({type: 'requestLocation'}, '*');
+        window.postMessage({type: 'requestLocation'}, '*');
+        
+        // Listen for response
+        const messageListener = function(event) {
+          if (!resolved && event.data && event.data.type === 'locationResponse' && event.data.latitude && event.data.longitude) {
+            resolved = true;
+            clearTimeout(timeout);
+            window.removeEventListener('message', messageListener);
+            resolve({
+              lat: event.data.latitude,
+              lon: event.data.longitude,
+              source: "PRISM Live GPS (Message)"
+            });
+          }
+        };
+        window.addEventListener('message', messageListener);
+        
+      } catch (e) {
+        console.warn('Message-based location request failed:', e);
+      }
+      
+      // If no specific interface worked, reject after timeout
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          reject(new Error('No PRISM Live location interface found'));
+        }
+      }, 2000);
+    });
+  }
+  
+  // Method 2: Try browser GPS
+  function getBrowserGPS(showLoadingMessages = true) {
+    return new Promise((resolve, reject) => {
+      console.log('getBrowserGPS called, isInApp:', isInApp, 'showLoadingMessages:', showLoadingMessages);
+      
+      // Skip GPS entirely in app environments
+      if (isInApp) {
+        console.log('GPS skipped - in app environment');
+        reject(new Error('GPS skipped - in app environment'));
+        return;
+      }
+      
+      if (!navigator.geolocation) {
+        console.log('Geolocation not supported');
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+  
+      if (showLoadingMessages) {
+        console.log('Setting GPS loading message');
+        placeEl.textContent = "Grabbing GPS Location...";
+      }
+      
+      const options = {
+        enableHighAccuracy: true,
+        timeout: isIOS ? 60000 : (isMobile ? 45000 : 15000),
+        maximumAge: gpsSuccessful ? 30000 : 0
+      };
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          gpsSuccessful = true;
+          consecutiveGPSFailures = 0;
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            accuracy: Math.round(position.coords.accuracy),
+            source: `GPS (±${Math.round(position.coords.accuracy)}m)`
+          });
+        },
+        (error) => {
+          consecutiveGPSFailures++;
+          reject(error);
+        },
+        options
+      );
+    });
+  }
+  
+  // Method 3: Fallback to IP location with multiple services
+  async function getLocationFromGoogle(){
+    try {
+      const res = await fetch("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ considerIp: true })
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`Google Geolocation API error: ${data.error.message}`);
+      }
+      
+      return {
+        lat: data.location.lat,
+        lon: data.location.lng,
+        source: "IP Location (Google)"
+      };
+    } catch (error) {
+      console.warn('Google IP location failed:', error);
+      throw error;
+    }
+  }
+
+  // Alternative IP location services
+  async function getIPLocationFromIpApi() {
+    try {
+      const res = await fetch('https://ip-api.com/json/?fields=status,lat,lon');
+      const data = await res.json();
+      
+      if (data.status !== 'success') {
+        throw new Error('IP-API request failed');
+      }
+      
+      return {
+        lat: data.lat,
+        lon: data.lon,
+        source: "IP Location (IP-API)"
+      };
+    } catch (error) {
+      console.warn('IP-API location failed:', error);
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpInfo() {
+    try {
+      const res = await fetch('https://ipinfo.io/json');
+      const data = await res.json();
+      
+      if (!data.loc) {
+        throw new Error('IPInfo request failed - no location data');
+      }
+      
+      const [lat, lon] = data.loc.split(',').map(Number);
+      return {
+        lat: lat,
+        lon: lon,
+        source: "IP Location (IPInfo)"
+      };
+    } catch (error) {
+      console.warn('IPInfo location failed:', error);
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpApi2() {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`IPAPI.co error: ${data.reason}`);
+      }
+      
+      return {
+        lat: data.latitude,
+        lon: data.longitude,
+        source: "IP Location (IPAPI.co)"
+      };
+    } catch (error) {
+      console.warn('IPAPI.co location failed:', error);
+      throw error;
+    }
+  }
+
+  // Try multiple IP location services in order
+  async function getIPLocation() {
+    const services = [
+      getLocationFromGoogle,
+      getIPLocationFromIpApi,
+      getIPLocationFromIpInfo,
+      getIPLocationFromIpApi2
+    ];
+
+    for (const service of services) {
+      try {
+        const result = await service();
+        console.log('IP location success:', result.source);
+        return result;
+      } catch (error) {
+        console.warn('IP location service failed, trying next...', error);
+        continue;
+      }
+    }
+    
+    throw new Error('All IP location services failed');
+  }
+  
+  async function updateLocationAndWeather(showLoadingMessages = true){
+    try {
+      let locationData = null;
+      
+      // Try Method 1: IRL Pro location data
+      locationData = getIRLProLocation();
+      
+      // Try Method 1.5: Try PRISM Live location data
+      if (!locationData) {
+        locationData = getPRISMLocation();
+      }
+      
+      // Try Method 1.6: Actively request location from PRISM Live
+      if (!locationData) {
+        try {
+          locationData = await requestPRISMLocation();
+        } catch (prismError) {
+          console.warn('PRISM Live location request failed:', prismError);
+        }
+      }
+      
+      // Try Method 2: Browser GPS (but skip in app environments where it often fails)
+      if (!locationData && (!gpsAttempted || gpsSuccessful) && !isInApp) {
+        try {
+          locationData = await getBrowserGPS(showLoadingMessages);
+          gpsAttempted = true;
+        } catch (gpsError) {
+          console.warn('GPS failed:', gpsError);
+          gpsAttempted = true;
+        }
+      }
+      
+      // Try Method 3: IP location fallback
+      if (!locationData) {
+        if (showLoadingMessages) {
+          placeEl.textContent = "Loading location...";
+        }
+        try {
+          locationData = await getIPLocation();
+        } catch (ipError) {
+          console.error('All IP location services failed:', ipError);
+        }
+      }
+      
+      // Use last known GPS location only if it's very recent (within 5 minutes) and GPS just failed
+      if (!locationData && gpsSuccessful && lastKnownLocation && lastKnownLocation.source.includes('GPS') && consecutiveGPSFailures === 1) {
+        const now = Date.now();
+        const locationAge = now - (lastKnownLocation.timestamp || 0);
+        if (locationAge < 300000) { // 5 minutes
+          locationData = lastKnownLocation;
+          console.log('Using cached GPS location');
+        }
+      }
+      
+      // Update the display
+      if (locationData) {
+        lastKnownLocation = locationData;
+        lastKnownLocation.timestamp = Date.now();
+        if (showLoadingMessages) {
+          placeEl.textContent = "Loading location...";
+        }
+        const label = await reverseGeocode(locationData.lat, locationData.lon);
+        placeEl.textContent = label;
+        fetchWeather(locationData.lat, locationData.lon);
+        console.log('Location updated:', locationData.source, label);
+      } else {
+        throw new Error('No location data available from any source');
+      }
+      
+    } catch (e) {
+      console.error('Location update failed:', e);
+      placeEl.textContent = "Location N/A";
+      weatherEl.textContent = "Weather N/A";
+    }
+  }
+  
+  // Auto-refresh every 90 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 90000);
+  
+  // Debug function to detect available location interfaces
+  function debugLocationInterfaces() {
+    console.log('=== LOCATION INTERFACE DEBUG ===');
+    console.log('User Agent:', navigator.userAgent);
+    console.log('Location href:', window.location.href);
+    console.log('Location protocol:', window.location.protocol);
+    console.log('Location hostname:', window.location.hostname);
+    console.log('Window chrome:', !!window.chrome);
+    console.log('Outer width:', window.outerWidth, 'Inner width:', window.innerWidth);
+    console.log('IRL Pro locationData:', !!window.locationData);
+    console.log('PRISM prismLocationData:', !!window.prismLocationData);
+    console.log('PRISM window.prism:', !!window.prism);
+    console.log('PRISM window.PRISM_GPS:', !!window.PRISM_GPS);
+    console.log('WebKit messageHandlers:', !!(window.webkit && window.webkit.messageHandlers));
+    console.log('Android interface:', !!window.Android);
+    console.log('Navigator geolocation:', !!navigator.geolocation);
+    console.log('Is in app environment:', isInApp);
+    
+    // Log all window properties that might be related to location
+    const locationRelatedProps = [];
+    for (let prop in window) {
+      if (prop.toLowerCase().includes('location') || 
+          prop.toLowerCase().includes('gps') || 
+          prop.toLowerCase().includes('geo') ||
+          prop.toLowerCase().includes('prism') ||
+          prop.toLowerCase().includes('position')) {
+        locationRelatedProps.push(prop + ': ' + typeof window[prop]);
+      }
+    }
+    if (locationRelatedProps.length > 0) {
+      console.log('Location-related window properties:', locationRelatedProps);
+    }
+    console.log('=== END DEBUG ===');
+  }
+  
+  // Run debug on load
+  setTimeout(debugLocationInterfaces, 1000);
+  
+  // Start immediately (with loading messages)
+  updateLocationAndWeather(true);
+  </script>
+  </body></html>
