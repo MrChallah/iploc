@@ -7,14 +7,14 @@
 - **Best for:** PRISM Live, OBS, XSplit, and most streaming apps
 - **Accuracy:** Lower (IP-based location)
 - **Compatibility:** Universal - works in all environments
-- **Use case:** When you need maximum compatibility across different streaming platforms
+- **Use case:** When you need maximum compatibility across different streaming platforms like OBS and PRISM Live Studio
 
 ### 📍 GPS + IP Version (Most Accurate)  
 **URL:** `https://mrchallah.github.io`
 - **Best for:** IRL Pro and GPS-capable environments
 - **Accuracy:** High (GPS + IP fallback)
 - **Compatibility:** Limited to GPS-friendly environments
-- **Use case:** When you need precise location data and are using IRL Pro
+- **Use case:** When you need precise location data and are using apps like IRL Pro
 
 ## Quick Setup
 
