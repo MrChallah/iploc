@@ -44,7 +44,7 @@
   }
   
   .weather-row {
-    margin-top: -4px;
+    margin-top: -4.25px;
   }
   </style></head><body class="text-white">
   
@@ -100,11 +100,10 @@
   
   function tick(){
     const now = new Date();
-    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
     const dateString = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     
-    document.getElementById('time').textContent = `${dayName}, ${dateString}, ${timeString}`;
+    document.getElementById('time').textContent = `${dateString}, ${timeString}`;
   }
   tick(); setInterval(tick, 1000);
   
