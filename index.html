@@ -6,7 +6,10 @@
     background: transparent !important;
   }
   .text-shadow {
-    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+    color: white;
+    font-size: 1.3em;
+    -webkit-text-stroke: 0.7px #000;
+    text-shadow: 0 0 1px #000, 0 0 8px #000;
   }
   .info-icon {
     width: 30px;
@@ -16,6 +19,12 @@
   .weather-icon {
     position: relative;
     display: inline-block;
+  }
+  
+  .weather-icon-main {
+    color: white;
+    -webkit-text-stroke: 1px #000;
+    text-shadow: 0 0 4px #000, 0 0 8px #000;
   }
   
   .heat-waves {
@@ -32,18 +41,25 @@
     50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
   }
   
-  .weather-icon-main {
-    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+  .icon-text-shadow {
+    color: white;
+    font-size: 1.3em;
+    -webkit-text-stroke: 1px #000;
+    text-shadow: 0 0 4px #000, 0 0 8px #000;
+  }
+  
+  .weather-row {
+    margin-top: -4px;
   }
   </style></head><body class="text-white">
   
   <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
-    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon me-2"></i><span id="time">--:--:--</span></div>
-    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap">
-      <i class="fa-solid fa-location-dot info-icon me-2"></i>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
+      <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
       <span id="place">Waiting…</span>
     </div>
-    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
         <span id="weather-icon" class="weather-icon">
           <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
@@ -168,7 +184,7 @@
     45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle', 
     55: 'Dense Drizzle', 56: 'Light Freezing Drizzle', 57: 'Dense Freezing Drizzle',
     61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain', 66: 'Light Freezing Rain', 
-    67: 'Heavy Freezing Rain', 71: 'Slight Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
+    67: 'Heavy Freezing Rain', 71: 'Light Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
     77: 'Snow Grains', 80: 'Slight Rain Showers', 81: 'Moderate Rain Showers', 
     82: 'Violent Rain Showers', 85: 'Slight Snow Showers', 86: 'Heavy Snow Showers',
     95: 'Thunderstorm', 96: 'Thunderstorm with Slight Hail', 99: 'Thunderstorm with Heavy Hail'
@@ -204,7 +220,7 @@
       67: 'fa-cloud-rain',   // Heavy Freezing Rain
       
       // Snow
-      71: 'fa-snowflake',    // Slight Snow
+      71: 'fa-snowflake',    // Light Snow
       73: 'fa-snowflake',    // Moderate Snow
       75: 'fa-snowflake',    // Heavy Snow
       77: 'fa-snowflake',    // Snow Grains
@@ -709,4 +725,4 @@
   // Start immediately (with loading messages)
   updateLocationAndWeather(true);
   </script>
-  </body></html>
+  </body></html> 
