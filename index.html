@@ -12,6 +12,29 @@
     width: 30px;
     text-align: center;
   }
+  
+  .weather-icon {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .heat-waves {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    animation: heatWave 2s ease-in-out infinite;
+  }
+  
+  @keyframes heatWave {
+    0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.7; }
+    50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
+  }
+  
+  .weather-icon-main {
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+  }
   </style></head><body class="text-white">
   
   <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
@@ -20,10 +43,17 @@
       <i class="fa-solid fa-location-dot info-icon me-2"></i>
       <span id="place">Waiting…</span>
     </div>
-    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap"><i class="fa-solid fa-cloud info-icon me-2"></i><span id="weather">--°C</span></div>
+    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap">
+      <span class="info-icon me-2">
+        <span id="weather-icon" class="weather-icon">
+          <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
+          <i id="heat-waves" class="fa-solid fa-water heat-waves" style="display: none;"></i>
+        </span>
+      </span>
+      <span id="weather">--°C</span>
+    </div>
   </div>
   
-
   <script>
   const placeEl = document.getElementById('place');
   const weatherEl = document.getElementById('weather');
@@ -132,6 +162,69 @@
     }
   }
   
+  // Weather condition mapping for Open-Meteo weather codes
+  const weatherCodes = {
+    0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
+    45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle', 
+    55: 'Dense Drizzle', 56: 'Light Freezing Drizzle', 57: 'Dense Freezing Drizzle',
+    61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain', 66: 'Light Freezing Rain', 
+    67: 'Heavy Freezing Rain', 71: 'Slight Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
+    77: 'Snow Grains', 80: 'Slight Rain Showers', 81: 'Moderate Rain Showers', 
+    82: 'Violent Rain Showers', 85: 'Slight Snow Showers', 86: 'Heavy Snow Showers',
+    95: 'Thunderstorm', 96: 'Thunderstorm with Slight Hail', 99: 'Thunderstorm with Heavy Hail'
+  };
+  
+  // Function to get weather icon based on weather code
+  function getWeatherIcon(weatherCode) {
+    const iconMap = {
+      // Clear/Sunny
+      0: 'fa-sun',           // Clear Sky
+      1: 'fa-sun',           // Mainly Clear
+      
+      // Cloudy
+      2: 'fa-cloud-sun',     // Partly Cloudy
+      3: 'fa-cloud',         // Overcast
+      
+      // Fog
+      45: 'fa-smog',         // Fog
+      48: 'fa-smog',         // Depositing Rime Fog
+      
+      // Drizzle
+      51: 'fa-cloud-drizzle', // Light Drizzle
+      53: 'fa-cloud-drizzle', // Moderate Drizzle
+      55: 'fa-cloud-drizzle', // Dense Drizzle
+      56: 'fa-cloud-drizzle', // Light Freezing Drizzle
+      57: 'fa-cloud-drizzle', // Dense Freezing Drizzle
+      
+      // Rain
+      61: 'fa-cloud-rain',   // Slight Rain
+      63: 'fa-cloud-rain',   // Moderate Rain
+      65: 'fa-cloud-rain',   // Heavy Rain
+      66: 'fa-cloud-rain',   // Light Freezing Rain
+      67: 'fa-cloud-rain',   // Heavy Freezing Rain
+      
+      // Snow
+      71: 'fa-snowflake',    // Slight Snow
+      73: 'fa-snowflake',    // Moderate Snow
+      75: 'fa-snowflake',    // Heavy Snow
+      77: 'fa-snowflake',    // Snow Grains
+      
+      // Showers
+      80: 'fa-cloud-showers-heavy', // Slight Rain Showers
+      81: 'fa-cloud-showers-heavy', // Moderate Rain Showers
+      82: 'fa-cloud-showers-heavy', // Violent Rain Showers
+      85: 'fa-snowflake',    // Slight Snow Showers
+      86: 'fa-snowflake',    // Heavy Snow Showers
+      
+      // Thunderstorm
+      95: 'fa-cloud-bolt',   // Thunderstorm
+      96: 'fa-cloud-bolt',   // Thunderstorm with Slight Hail
+      99: 'fa-cloud-bolt'    // Thunderstorm with Heavy Hail
+    };
+    
+    return iconMap[weatherCode] || 'fa-cloud';
+  }
+  
   async function fetchWeather(lat, lon){
     try {
       const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
@@ -139,20 +232,24 @@
       const c = Math.round(j.current.temperature_2m);
       const f = Math.round(c * 9 / 5 + 32);
       
-      // Weather condition mapping for Open-Meteo weather codes
-      const weatherCodes = {
-        0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
-        45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle', 
-        55: 'Dense Drizzle', 56: 'Light Freezing Drizzle', 57: 'Dense Freezing Drizzle',
-        61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain', 66: 'Light Freezing Rain', 
-        67: 'Heavy Freezing Rain', 71: 'Slight Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
-        77: 'Snow Grains', 80: 'Slight Rain Showers', 81: 'Moderate Rain Showers', 
-        82: 'Violent Rain Showers', 85: 'Slight Snow Showers', 86: 'Heavy Snow Showers',
-        95: 'Thunderstorm', 96: 'Thunderstorm with Slight Hail', 99: 'Thunderstorm with Heavy Hail'
-      };
-      
       const desc = weatherCodes[j.current.weather_code] || 'Unknown';
       weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
+      
+      // Update weather icon
+      const weatherIconMain = document.getElementById('weather-icon-main');
+      const heatWaves = document.getElementById('heat-waves');
+      const iconClass = getWeatherIcon(j.current.weather_code);
+      
+      // Remove all existing weather icon classes
+      weatherIconMain.className = 'weather-icon-main';
+      weatherIconMain.classList.add('fa-solid', iconClass);
+      
+      // Show heat waves if temperature is above 28°C
+      if (c > 28) {
+        heatWaves.style.display = 'inline-block';
+      } else {
+        heatWaves.style.display = 'none';
+      }
     } catch (error) {
       console.error('Weather fetch failed:', error);
       weatherEl.textContent = "Weather N/A";
