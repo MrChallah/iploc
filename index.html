@@ -119,7 +119,6 @@
         
         // Extract components in preferred order
         let road = '';
-        let area = '';
         let city = '';
         let state = '';
         let country = '';
@@ -128,8 +127,6 @@
           const types = component.types;
           if (types.includes('route') || types.includes('street_address')) {
             road = component.long_name;
-          } else if (types.includes('neighborhood') || types.includes('sublocality')) {
-            area = component.long_name;
           } else if (types.includes('locality') || types.includes('administrative_area_level_2')) {
             city = component.long_name;
           } else if (types.includes('administrative_area_level_1')) {
