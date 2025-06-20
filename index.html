@@ -125,16 +125,36 @@
         
         components.forEach(component => {
           const types = component.types;
+          const name = component.long_name;
+          
+          // Filter out specific district/dong names that are too detailed
+          const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || name.includes('(') || name.includes(')');
+          
           if (types.includes('route') || types.includes('street_address')) {
-            road = component.long_name;
-          } else if (types.includes('locality') || types.includes('administrative_area_level_2')) {
-            city = component.long_name;
+            road = name;
+          } else if ((types.includes('locality') || types.includes('administrative_area_level_2')) && !isDetailedDistrict) {
+            city = name;
           } else if (types.includes('administrative_area_level_1')) {
-            state = component.long_name;
+            state = name;
           } else if (types.includes('country')) {
-            country = component.long_name;
+            country = name;
           }
         });
+        
+        // If we filtered out the city due to detailed district, try to find a better one
+        if (!city) {
+          components.forEach(component => {
+            const types = component.types;
+            const name = component.long_name;
+            
+            // Look for administrative_area_level_1 or other broader locality types
+            if (types.includes('administrative_area_level_1') && name !== state) {
+              city = name;
+            } else if (types.includes('locality') && !name.includes('-dong') && !name.includes('(')) {
+              city = name;
+            }
+          });
+        }
         
         // Build address string, prioritizing the most specific location
         const parts = [
@@ -160,6 +180,13 @@
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en&addressdetails=1&extratags=1`);
       const geo = await res.json();
       const addr = geo.address;
+      
+      // Filter out detailed districts from Nominatim as well
+      let suburb = addr.suburb || "";
+      if (suburb.includes('-dong') || suburb.includes('(') || suburb.includes(')')) {
+        suburb = "";
+      }
+      
       const parts = [
         addr.city || addr.town || addr.village || "",
         addr.state || "",
