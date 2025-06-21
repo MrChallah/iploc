@@ -357,8 +357,8 @@
       const precipitation = j.current.precipitation || 0;
       const visibility = j.current.visibility || 10000;
       
-      // Wind conditions (if wind speed > 25 km/h)
-      if (windSpeed > 25) {
+      // Wind conditions (if wind speed > 20 km/h)
+      if (windSpeed > 20) {
         if (precipitation > 0) {
           condition = 'WIND_AND_RAIN';
           desc = 'Windy with Rain';
