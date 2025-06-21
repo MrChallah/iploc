@@ -2,14 +2,14 @@
 
 ## Two Versions Available
 
-### 🌐 IP-Only Version (Most Compatible)
+### 🌐 IP-Only Version (Most Compatible) - Best for OBS/Prism Live
 **URL:** `https://mrchallah.github.io/iploc`
 - **Best for:** PRISM Live, OBS, XSplit, and most streaming apps
 - **Accuracy:** Lower (IP-based location)
 - **Compatibility:** Universal - works in all environments
 - **Use case:** When you need maximum compatibility across different streaming platforms like OBS and PRISM Live Studio
 
-### 📍 GPS + IP Version (Most Accurate)  
+### 📍 GPS + IP Version (Most Accurate) - Best for IRL Pro
 **URL:** `https://mrchallah.github.io`
 - **Best for:** IRL Pro and GPS-capable environments
 - **Accuracy:** High (GPS + IP fallback)
