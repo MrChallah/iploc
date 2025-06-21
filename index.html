@@ -118,7 +118,6 @@
         const components = result.address_components;
         
         // Extract components in preferred order
-        let road = '';
         let city = '';
         let state = '';
         let country = '';
@@ -136,9 +135,7 @@
           // Filter out specific district/dong names that are too detailed
           const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || name.includes('(') || name.includes(')');
           
-          if ((types.includes('route') || types.includes('street_address')) && !isDetailedDistrict) {
-            road = name;
-          } else if ((types.includes('locality') || types.includes('administrative_area_level_2')) && !isDetailedDistrict) {
+          if ((types.includes('locality') || types.includes('administrative_area_level_2')) && !isDetailedDistrict) {
             city = name;
           } else if (types.includes('administrative_area_level_1') && !isDetailedDistrict) {
             state = name;
