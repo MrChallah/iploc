@@ -443,8 +443,8 @@
         desc = 'Very Cold';
       }
       
-      // Change "Clear" to "Sunny" if temperature is above 27°C and condition is clear
-      if (j.current.weather_code === 0 && c > 27 && condition === 'CLEAR') {
+      // Change "Clear" to "Sunny" if temperature is above 27°C and condition is clear AND it's daytime
+      if (j.current.weather_code === 0 && c > 27 && condition === 'CLEAR' && isDay) {
         desc = 'Sunny';
       }
       
