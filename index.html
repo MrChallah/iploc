@@ -122,24 +122,33 @@
         let city = '';
         let state = '';
         let country = '';
+        let isJapan = false;
         
         components.forEach(component => {
           const types = component.types;
           const name = component.long_name;
           
+          // Check if location is in Japan
+          if (types.includes('country') && (component.short_name === 'JP' || name === 'Japan')) {
+            isJapan = true;
+          }
+          
           // Filter out specific district/dong names that are too detailed
           const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || name.includes('(') || name.includes(')');
           
-          if (types.includes('route') || types.includes('street_address')) {
+          if ((types.includes('route') || types.includes('street_address')) && !isDetailedDistrict) {
             road = name;
           } else if ((types.includes('locality') || types.includes('administrative_area_level_2')) && !isDetailedDistrict) {
             city = name;
-          } else if (types.includes('administrative_area_level_1')) {
+          } else if (types.includes('administrative_area_level_1') && !isDetailedDistrict) {
             state = name;
           } else if (types.includes('country')) {
             country = name;
           }
         });
+        
+        // Store Japan status globally for weather icon selection
+        window.isLocationInJapan = isJapan;
         
         // If we filtered out the city due to detailed district, try to find a better one
         if (!city) {
@@ -181,6 +190,9 @@
       const geo = await res.json();
       const addr = geo.address;
       
+      // Check if Japan in Nominatim response
+      window.isLocationInJapan = addr.country_code === 'jp' || addr.country === 'Japan' || addr.country === '日本';
+      
       // Filter out detailed districts from Nominatim as well
       let suburb = addr.suburb || "";
       if (suburb.includes('-dong') || suburb.includes('(') || suburb.includes(')')) {
@@ -196,93 +208,275 @@
     }
   }
   
-  // Weather condition mapping for Open-Meteo weather codes
-  const weatherCodes = {
-    0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
-    45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle', 
-    55: 'Dense Drizzle', 56: 'Light Freezing Drizzle', 57: 'Dense Freezing Drizzle',
-    61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain', 66: 'Light Freezing Rain', 
-    67: 'Heavy Freezing Rain', 71: 'Light Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
-    77: 'Snow Grains', 80: 'Slight Rain Showers', 81: 'Moderate Rain Showers', 
-    82: 'Violent Rain Showers', 85: 'Slight Snow Showers', 86: 'Heavy Snow Showers',
-    95: 'Thunderstorm', 96: 'Thunderstorm with Slight Hail', 99: 'Thunderstorm with Heavy Hail'
+  // Google Weather condition mapping for Open-Meteo weather codes
+  const googleWeatherCodes = {
+    0: { condition: 'CLEAR', description: 'Clear' },
+    1: { condition: 'MOSTLY_CLEAR', description: 'Mostly Clear' },
+    2: { condition: 'PARTLY_CLOUDY', description: 'Partly Cloudy' },
+    3: { condition: 'MOSTLY_CLOUDY', description: 'Mostly Cloudy' },
+    45: { condition: 'FOG', description: 'Fog' },
+    48: { condition: 'FOG', description: 'Depositing Rime Fog' },
+    51: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Drizzle' },
+    53: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Moderate Drizzle' },
+    55: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Dense Drizzle' },
+    56: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Freezing Drizzle' },
+    57: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Dense Freezing Drizzle' },
+    61: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Rain' },
+    63: { condition: 'RAIN_SHOWERS', description: 'Moderate Rain' },
+    65: { condition: 'HEAVY_RAIN_SHOWERS', description: 'Heavy Rain' },
+    66: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Freezing Rain' },
+    67: { condition: 'HEAVY_RAIN_SHOWERS', description: 'Heavy Freezing Rain' },
+    71: { condition: 'LIGHT_SNOW', description: 'Light Snow' },
+    73: { condition: 'SNOW', description: 'Moderate Snow' },
+    75: { condition: 'HEAVY_SNOW', description: 'Heavy Snow' },
+    77: { condition: 'LIGHT_SNOW', description: 'Snow Grains' },
+    80: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Rain Showers' },
+    81: { condition: 'RAIN_SHOWERS', description: 'Moderate Rain Showers' },
+    82: { condition: 'HEAVY_RAIN_SHOWERS', description: 'Heavy Rain Showers' },
+    85: { condition: 'LIGHT_SNOW_SHOWERS', description: 'Light Snow Showers' },
+    86: { condition: 'HEAVY_SNOW_SHOWERS', description: 'Heavy Snow Showers' },
+    95: { condition: 'THUNDERSTORM', description: 'Thunderstorm' },
+    96: { condition: 'THUNDERSTORM', description: 'Thunderstorm with Light Hail' },
+    99: { condition: 'THUNDERSTORM', description: 'Thunderstorm with Heavy Hail' }
   };
   
-  // Function to get weather icon based on weather code
-  function getWeatherIcon(weatherCode) {
-    const iconMap = {
-      // Clear/Sunny
-      0: 'fa-sun',           // Clear Sky
-      1: 'fa-sun',           // Mainly Clear
-      
-      // Cloudy
-      2: 'fa-cloud-sun',     // Partly Cloudy
-      3: 'fa-cloud',         // Overcast
-      
-      // Fog
-      45: 'fa-eye-slash',    // Fog
-      48: 'fa-eye-slash',    // Depositing Rime Fog
-      
-      // Drizzle
-      51: 'fa-cloud-rain',   // Light Drizzle
-      53: 'fa-cloud-rain',   // Moderate Drizzle
-      55: 'fa-cloud-rain',   // Dense Drizzle
-      56: 'fa-cloud-rain',   // Light Freezing Drizzle
-      57: 'fa-cloud-rain',   // Dense Freezing Drizzle
-      
-      // Rain
-      61: 'fa-cloud-rain',   // Slight Rain
-      63: 'fa-cloud-rain',   // Moderate Rain
-      65: 'fa-cloud-rain',   // Heavy Rain
-      66: 'fa-cloud-rain',   // Light Freezing Rain
-      67: 'fa-cloud-rain',   // Heavy Freezing Rain
-      
-      // Snow
-      71: 'fa-snowflake',    // Light Snow
-      73: 'fa-snowflake',    // Moderate Snow
-      75: 'fa-snowflake',    // Heavy Snow
-      77: 'fa-snowflake',    // Snow Grains
-      
-      // Showers
-      80: 'fa-cloud-rain',   // Slight Rain Showers
-      81: 'fa-cloud-rain',   // Moderate Rain Showers
-      82: 'fa-cloud-rain',   // Violent Rain Showers
-      85: 'fa-snowflake',    // Slight Snow Showers
-      86: 'fa-snowflake',    // Heavy Snow Showers
-      
-      // Thunderstorm
-      95: 'fa-bolt',         // Thunderstorm
-      96: 'fa-bolt',         // Thunderstorm with Slight Hail
-      99: 'fa-bolt'          // Thunderstorm with Heavy Hail
+  // Function to get Google weather icon URL based on weather code and time
+  function getGoogleWeatherIcon(weatherCode, isDay = true, condition = null) {
+    // Use passed condition or derive from weather code
+    const finalCondition = condition || googleWeatherCodes[weatherCode]?.condition || 'CLOUDY';
+    
+    // Repository base URL for v4 icons (now primary for everyone)
+    const repoBaseUrl = 'https://raw.githubusercontent.com/mrdarrengriffin/google-weather-icons/main/v4/';
+    const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
+    
+    // Standard Google Maps weather icon mapping for fallback
+    const standardIconMap = {
+      'CLEAR': isDay ? 'sunny.svg' : 'clear.svg',
+      'MOSTLY_CLEAR': isDay ? 'mostly_sunny.svg' : 'mostly_clear.svg',
+      'PARTLY_CLOUDY': isDay ? 'party_cloudy.svg' : 'partly_clear.svg',
+      'MOSTLY_CLOUDY': isDay ? 'cloudy.svg' : 'cloudy.svg',
+      'CLOUDY': 'cloudy.svg',
+      'FOG': 'fog.svg',
+      'WINDY': isDay ? 'windy_breezy.svg' : 'mostly_clear.svg',
+      'WIND_AND_RAIN': 'showers.svg',
+      'LIGHT_RAIN_SHOWERS': 'drizzle.svg',
+      'RAIN_SHOWERS': 'showers.svg',
+      'HEAVY_RAIN_SHOWERS': 'heavy.svg',
+      'LIGHT_RAIN': 'drizzle.svg',
+      'RAIN': 'rain.svg',
+      'HEAVY_RAIN': 'heavy.svg',
+      'LIGHT_SNOW_SHOWERS': 'flurries.svg',
+      'SNOW_SHOWERS': 'snow_showers.svg',
+      'HEAVY_SNOW_SHOWERS': 'heavy_snow.svg',
+      'LIGHT_SNOW': 'flurries.svg',
+      'SNOW': 'snow_showers.svg',
+      'HEAVY_SNOW': 'heavy_snow.svg',
+      'SNOWSTORM': 'snow_showers.svg',
+      'SNOW_PERIODICALLY_HEAVY': 'heavy_snow.svg',
+      'HEAVY_SNOW_STORM': 'heavy_snow.svg',
+      'BLOWING_SNOW': 'blowing_snow.svg',
+      'RAIN_AND_SNOW': 'wintry_mix.svg',
+      'HAIL': 'sleet_hail.svg',
+      'HAIL_SHOWERS': 'wintry_mix.svg',
+      'THUNDERSTORM': 'strong_tstorms.svg',
+      'THUNDERSHOWER': 'strong_tstorms.svg',
+      'LIGHT_THUNDERSTORM_RAIN': 'strong_tstorms.svg',
+      'SCATTERED_THUNDERSTORMS': 'isolated_tstorms.svg',
+      'HEAVY_THUNDERSTORM': 'strong_tstorms.svg'
     };
     
-    return iconMap[weatherCode] || 'fa-cloud';
+    // v4 repository weather icon mapping (now primary for everyone)
+    const v4IconMap = {
+      'CLEAR': isDay ? 'sunny_day.svg' : 'clear_night.svg',
+      'MOSTLY_CLEAR': isDay ? 'mostly_clear_day.svg' : 'mostly_clear_night.svg',
+      'PARTLY_CLOUDY': isDay ? 'partly_cloudy_day.svg' : 'partly_cloudy_night.svg',
+      'MOSTLY_CLOUDY': isDay ? 'mostly_cloudy_day.svg' : 'mostly_cloudy_night.svg',
+      'CLOUDY': 'cloudy.svg',
+      'FOG': 'haze_fog_dust_smoke.svg',
+      'WINDY': 'windy.svg',
+      'WIND_AND_RAIN': 'heavy_rain.svg',
+      'LIGHT_RAIN_SHOWERS': 'drizzle.svg',
+      'RAIN_SHOWERS': isDay ? 'scattered_showers_day.svg' : 'scattered_showers_night.svg',
+      'HEAVY_RAIN_SHOWERS': 'showers_rain.svg',
+      'LIGHT_RAIN': isDay ? 'rain_with_cloudy_light.svg' : 'rain_with_cloudy_dark.svg',
+      'RAIN': isDay ? 'rain_with_cloudy_light.svg' : 'rain_with_cloudy_dark.svg',
+      'HEAVY_RAIN': 'heavy_rain.svg',
+      'LIGHT_SNOW_SHOWERS': isDay ? 'scattered_snow_showers_day.svg' : 'scattered_snow_showers_night.svg',
+      'SNOW_SHOWERS': 'showers_snow.svg',
+      'HEAVY_SNOW_SHOWERS': 'showers_snow.svg',
+      'LIGHT_SNOW': isDay ? 'snow_with_cloudy_light.svg' : 'snow_with_cloudy_dark.svg',
+      'SNOW': isDay ? 'snow_with_cloudy_light.svg' : 'snow_with_cloudy_dark.svg',
+      'HEAVY_SNOW': 'heavy_snow.svg',
+      'SNOWSTORM': 'heavy_snow.svg',
+      'SNOW_PERIODICALLY_HEAVY': 'heavy_snow.svg',
+      'HEAVY_SNOW_STORM': 'heavy_snow.svg',
+      'BLOWING_SNOW': 'blowing_snow.svg',
+      'RAIN_AND_SNOW': 'mixed_rain_snow.svg',
+      'HAIL': 'sleet_hail.svg',
+      'HAIL_SHOWERS': 'mixed_rain_hail_sleet.svg',
+      'THUNDERSTORM': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'THUNDERSHOWER': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'LIGHT_THUNDERSTORM_RAIN': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'SCATTERED_THUNDERSTORMS': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'HEAVY_THUNDERSTORM': 'isolated_thunderstorms.svg',
+      'ICY': 'icy.svg',
+      'BLIZZARD': 'blizzard.svg',
+      'TORNADO': 'tornado.svg',
+      'TROPICAL_STORM': 'tropical_storm_hurricane.svg',
+      'VERY_HOT': 'very_hot.svg',
+      'VERY_COLD': 'very_cold.svg'
+    };
+    
+    // Use v4 repository icons as primary for everyone, with Google Maps as fallback
+    const v4Icon = v4IconMap[finalCondition] || 'cloudy.svg';
+    const fallbackIcon = standardIconMap[finalCondition] || 'cloudy.svg';
+    
+    console.log('🎌 Using v4 repository weather icon (primary):', v4Icon, 'for condition:', finalCondition);
+    return {
+      primary: repoBaseUrl + v4Icon,
+      fallback: fallbackUrl + fallbackIcon
+    };
   }
   
   async function fetchWeather(lat, lon){
     try {
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+      // Enhanced API call with additional parameters for better condition detection
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day,wind_speed_10m,precipitation,visibility&timezone=auto`);
       const j = await r.json();
       const c = Math.round(j.current.temperature_2m);
       const f = Math.round(c * 9 / 5 + 32);
+      const isDay = j.current.is_day === 1;
       
-      const desc = weatherCodes[j.current.weather_code] || 'Unknown';
+      // Enhanced weather condition detection using multiple parameters
+      let weatherInfo = googleWeatherCodes[j.current.weather_code] || { condition: 'CLOUDY', description: 'Cloudy' };
+      let condition = weatherInfo.condition;
+      let desc = weatherInfo.description;
+      
+      // Enhanced condition logic using additional parameters
+      const windSpeed = j.current.wind_speed_10m || 0;
+      const precipitation = j.current.precipitation || 0;
+      const visibility = j.current.visibility || 10000;
+      
+      // Wind conditions (if wind speed > 25 km/h)
+      if (windSpeed > 25) {
+        if (precipitation > 0) {
+          condition = 'WIND_AND_RAIN';
+          desc = 'Windy with Rain';
+        } else if (j.current.weather_code === 0 || j.current.weather_code === 1) {
+          condition = 'WINDY';
+          desc = 'Windy';
+        }
+      }
+      
+      // Visibility-based conditions
+      if (visibility < 1000) {
+        if (j.current.weather_code === 45 || j.current.weather_code === 48) {
+          // Keep existing fog mapping
+        } else if (c < 0 && (j.current.weather_code >= 71 && j.current.weather_code <= 77)) {
+          condition = 'BLOWING_SNOW';
+          desc = 'Blowing Snow';
+        }
+      }
+      
+      // Enhanced snow conditions based on intensity and temperature
+      if (j.current.weather_code >= 71 && j.current.weather_code <= 77) {
+        if (c < -10 && windSpeed > 30) {
+          condition = 'BLIZZARD';
+          desc = 'Blizzard';
+        } else if (j.current.weather_code === 75 && windSpeed > 20) {
+          condition = 'SNOWSTORM';
+          desc = 'Snowstorm';
+        } else if (c < -15) {
+          condition = 'HEAVY_SNOW_STORM';
+          desc = 'Heavy Snow Storm';
+        }
+      }
+      
+      // Enhanced rain conditions
+      if (j.current.weather_code >= 61 && j.current.weather_code <= 67) {
+        if (j.current.weather_code <= 63) {
+          condition = 'LIGHT_RAIN';
+          desc = 'Light Rain';
+        } else if (j.current.weather_code >= 65) {
+          condition = 'HEAVY_RAIN';
+          desc = 'Heavy Rain';
+        } else {
+          condition = 'RAIN';
+          desc = 'Rain';
+        }
+      }
+      
+      // Mixed precipitation detection
+      if (precipitation > 0 && c >= -2 && c <= 2) {
+        if (j.current.weather_code >= 61 && j.current.weather_code <= 67) {
+          condition = 'RAIN_AND_SNOW';
+          desc = 'Rain and Snow';
+        }
+      }
+      
+      // Thunderstorm enhancements
+      if (j.current.weather_code >= 95 && j.current.weather_code <= 99) {
+        if (windSpeed > 40) {
+          condition = 'HEAVY_THUNDERSTORM';
+          desc = 'Severe Thunderstorm';
+        } else if (windSpeed > 25) {
+          condition = 'SCATTERED_THUNDERSTORMS';
+          desc = 'Scattered Thunderstorms';
+        } else if (precipitation > 0) {
+          condition = 'THUNDERSHOWER';
+          desc = 'Thundershower';
+        }
+        
+        // Hail detection for thunderstorms
+        if (j.current.weather_code >= 96) {
+          condition = 'HAIL';
+          desc = j.current.weather_code === 96 ? 'Light Hail' : 'Heavy Hail';
+        }
+      }
+      
+      // Temperature-based extreme conditions
+      if (c > 35) {
+        condition = 'VERY_HOT';
+        desc = 'Very Hot';
+      } else if (c < -20) {
+        condition = 'VERY_COLD';
+        desc = 'Very Cold';
+      }
+      
+      // Change "Clear" to "Sunny" if temperature is above 27°C and condition is clear
+      if (j.current.weather_code === 0 && c > 27 && condition === 'CLEAR') {
+        desc = 'Sunny';
+      }
+      
       weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
       
-      // Update weather icon
-      const weatherIconMain = document.getElementById('weather-icon-main');
+      // Update weather icon with enhanced condition
+      const weatherIcon = document.getElementById('weather-icon');
+      const iconUrls = getGoogleWeatherIcon(j.current.weather_code, isDay, condition);
+      
+      // Replace Font Awesome icon with Google weather icon
+      const imgElement = document.createElement('img');
+      imgElement.src = iconUrls.primary;
+      imgElement.alt = desc;
+      imgElement.style.cssText = 'width: 24px; height: 24px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);';
+      
+      // Add error handler for fallback to standard Google icons
+      imgElement.onerror = function() {
+        console.log('Japanese regional icon failed, using fallback:', iconUrls.fallback);
+        this.src = iconUrls.fallback;
+      };
+      
+      weatherIcon.innerHTML = '';
+      weatherIcon.appendChild(imgElement);
+      
+      // Show heat waves if temperature is above 28°C (keeping this feature)
       const heatWaves = document.getElementById('heat-waves');
-      const iconClass = getWeatherIcon(j.current.weather_code);
-      
-      // Remove all existing weather icon classes
-      weatherIconMain.className = 'weather-icon-main';
-      weatherIconMain.classList.add('fa-solid', iconClass);
-      
-      // Show heat waves if temperature is above 28°C
+      if (heatWaves) {
       if (c > 28) {
         heatWaves.style.display = 'inline-block';
       } else {
         heatWaves.style.display = 'none';
+        }
       }
     } catch (error) {
       console.error('Weather fetch failed:', error);
@@ -521,6 +715,11 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ considerIp: true })
       });
+      
+      if (!res.ok) {
+        throw new Error(`Google Geolocation API failed: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
       
       if (data.error) {
@@ -533,7 +732,10 @@
         source: "IP Location (Google)"
       };
     } catch (error) {
-      console.warn('Google IP location failed:', error);
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('Google IP location failed:', error.message);
+      }
       throw error;
     }
   }
@@ -542,6 +744,11 @@
   async function getIPLocationFromIpApi() {
     try {
       const res = await fetch('https://ip-api.com/json/?fields=status,lat,lon');
+      
+      if (!res.ok) {
+        throw new Error(`IP-API failed: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
       
       if (data.status !== 'success') {
@@ -554,7 +761,10 @@
         source: "IP Location (IP-API)"
       };
     } catch (error) {
-      console.warn('IP-API location failed:', error);
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IP-API location failed:', error.message);
+      }
       throw error;
     }
   }
@@ -562,6 +772,11 @@
   async function getIPLocationFromIpInfo() {
     try {
       const res = await fetch('https://ipinfo.io/json');
+      
+      if (!res.ok) {
+        throw new Error(`IPInfo failed: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
       
       if (!data.loc) {
@@ -575,7 +790,10 @@
         source: "IP Location (IPInfo)"
       };
     } catch (error) {
-      console.warn('IPInfo location failed:', error);
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IPInfo location failed:', error.message);
+      }
       throw error;
     }
   }
@@ -583,6 +801,11 @@
   async function getIPLocationFromIpApi2() {
     try {
       const res = await fetch('https://ipapi.co/json/');
+      
+      if (!res.ok) {
+        throw new Error(`IPAPI.co failed: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
       
       if (data.error) {
@@ -595,7 +818,10 @@
         source: "IP Location (IPAPI.co)"
       };
     } catch (error) {
-      console.warn('IPAPI.co location failed:', error);
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IPAPI.co location failed:', error.message);
+      }
       throw error;
     }
   }
