@@ -25,15 +25,37 @@
   
   .heat-waves {
     position: absolute;
-    top: 25px;
-    left: 50%;
+    top: 30px;
+    left: 35%;
     transform: translateX(-50%);
     font-size: 12px;
     animation: heatWave 2s ease-in-out infinite;
   }
   
+  .heat-waves.with-wind {
+    left: 1%;
+  }
+  
   @keyframes heatWave {
     0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.7; }
+    50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
+  }
+  
+  .wind-waves {
+    position: absolute;
+    top: 30px;
+    left: 90%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    animation: windWave 1.5s ease-in-out infinite;
+  }
+  
+  .wind-waves.only-wind {
+    left: 50%;
+  }
+  
+  @keyframes windWave {
+    0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.8; }
     50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
   }
   
@@ -59,6 +81,7 @@
         <span id="weather-icon" class="weather-icon">
           <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
           <i id="heat-waves" class="fa-solid fa-water heat-waves" style="display: none;"></i>
+          <img id="wind-waves" class="wind-waves" style="display: none; width: 16px; height: 16px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);" alt="Windy" />
         </span>
       </span>
       <span id="weather">--°C</span>
@@ -294,8 +317,6 @@
       'MOSTLY_CLOUDY': isDay ? 'cloudy.svg' : 'cloudy.svg',
       'CLOUDY': 'cloudy.svg',
       'FOG': 'fog.svg',
-      'WINDY': isDay ? 'windy_breezy.svg' : 'mostly_clear.svg',
-      'WIND_AND_RAIN': 'showers.svg',
       'LIGHT_RAIN_SHOWERS': 'drizzle.svg',
       'RAIN_SHOWERS': 'showers.svg',
       'HEAVY_RAIN_SHOWERS': 'heavy.svg',
@@ -330,8 +351,6 @@
       'MOSTLY_CLOUDY': isDay ? 'mostly_cloudy_day.svg' : 'mostly_cloudy_night.svg',
       'CLOUDY': 'cloudy.svg',
       'FOG': 'haze_fog_dust_smoke.svg',
-      'WINDY': 'windy.svg',
-      'WIND_AND_RAIN': 'heavy_rain.svg',
       'LIGHT_RAIN_SHOWERS': 'drizzle.svg',
       'RAIN_SHOWERS': isDay ? 'scattered_showers_day.svg' : 'scattered_showers_night.svg',
       'HEAVY_RAIN_SHOWERS': 'showers_rain.svg',
@@ -394,16 +413,12 @@
       const precipitation = j.current.precipitation || 0;
       const visibility = j.current.visibility || 10000;
       
-      // Wind conditions (if wind speed > 20 km/h)
-      if (windSpeed > 20) {
-        if (precipitation > 0) {
-          condition = 'WIND_AND_RAIN';
-          desc = 'Windy with Rain';
-        } else if (j.current.weather_code === 0 || j.current.weather_code === 1) {
-          condition = 'WINDY';
-          desc = 'Windy';
-        }
-      }
+      // Wind conditions - now as secondary effects only
+      let isWindy = windSpeed > 20;
+      let isVeryWindy = windSpeed > 40;
+      
+      // Don't override main weather condition for wind - keep original condition
+      // Wind will be shown as secondary effect below
       
       // Visibility-based conditions
       if (visibility < 1000) {
@@ -453,7 +468,7 @@
       
       // Thunderstorm enhancements
       if (j.current.weather_code >= 95 && j.current.weather_code <= 99) {
-        if (windSpeed > 40) {
+        if (isVeryWindy) {
           condition = 'HEAVY_THUNDERSTORM';
           desc = 'Severe Thunderstorm';
         } else if (windSpeed > 25) {
@@ -504,8 +519,21 @@
       
       // Only replace the icon after the new one has loaded to prevent blinking
       imgElement.onload = function() {
+        // Preserve secondary effects (heat-waves and wind-waves)
+        const heatWaves = weatherIcon.querySelector('#heat-waves');
+        const windWaves = weatherIcon.querySelector('#wind-waves');
+        
+        // Clear and add new main icon
         weatherIcon.innerHTML = '';
         weatherIcon.appendChild(imgElement);
+        
+        // Re-add preserved secondary effects
+        if (heatWaves) {
+          weatherIcon.appendChild(heatWaves);
+        }
+        if (windWaves) {
+          weatherIcon.appendChild(windWaves);
+        }
       };
       
       // Start loading the image (this triggers the onload event when ready)
@@ -513,11 +541,60 @@
       
       // Show heat waves if temperature is above 28°C (keeping this feature)
       const heatWaves = document.getElementById('heat-waves');
+      const isHot = c > 28;
       if (heatWaves) {
-      if (c > 28) {
-        heatWaves.style.display = 'inline-block';
-      } else {
-        heatWaves.style.display = 'none';
+        if (isHot) {
+          heatWaves.style.display = 'inline-block';
+          // Add class to position heat waves to the left if wind is also showing
+          if (isWindy) {
+            heatWaves.classList.add('with-wind');
+          } else {
+            heatWaves.classList.remove('with-wind');
+          }
+        } else {
+          heatWaves.style.display = 'none';
+          heatWaves.classList.remove('with-wind');
+        }
+      }
+      
+      // Show wind waves if windy conditions
+      const windWaves = document.getElementById('wind-waves');
+      if (windWaves) {
+        if (isWindy) {
+          // Load windy.svg icon
+          const repoBaseUrl = 'https://raw.githubusercontent.com/MrChallah/MrChallah.github.io/main/v4/';
+          const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
+          
+          windWaves.src = repoBaseUrl + 'windy.svg';
+          windWaves.onerror = function() {
+            this.src = fallbackUrl + 'windy_breezy.svg';
+          };
+          windWaves.style.display = 'inline-block';
+          
+          // Position wind waves - if no heat, center it; if heat, keep it to the right
+          if (isHot) {
+            windWaves.classList.remove('only-wind');
+            // Update heat waves to show they're with wind
+            if (heatWaves) {
+              heatWaves.classList.add('with-wind');
+            }
+          } else {
+            windWaves.classList.add('only-wind');
+          }
+          
+          // Add wind description to weather text if windy
+          if (isVeryWindy) {
+            desc += ', Very Windy';
+          } else {
+            desc += ', Windy';
+          }
+        } else {
+          windWaves.style.display = 'none';
+          windWaves.classList.remove('only-wind');
+          // Remove wind class from heat waves
+          if (heatWaves) {
+            heatWaves.classList.remove('with-wind');
+          }
         }
       }
     } catch (error) {
