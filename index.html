@@ -491,20 +491,25 @@
       const weatherIcon = document.getElementById('weather-icon');
       const iconUrls = getGoogleWeatherIcon(j.current.weather_code, isDay, condition);
       
-      // Replace Font Awesome icon with Google weather icon
+      // Create new image element and preload it
       const imgElement = document.createElement('img');
-      imgElement.src = iconUrls.primary;
       imgElement.alt = desc;
       imgElement.style.cssText = 'width: 24px; height: 24px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);';
       
       // Add error handler for fallback to standard Google icons
       imgElement.onerror = function() {
-        console.log('Japanese regional icon failed, using fallback:', iconUrls.fallback);
+        console.log('Primary weather icon failed, using fallback:', iconUrls.fallback);
         this.src = iconUrls.fallback;
       };
       
-      weatherIcon.innerHTML = '';
-      weatherIcon.appendChild(imgElement);
+      // Only replace the icon after the new one has loaded to prevent blinking
+      imgElement.onload = function() {
+        weatherIcon.innerHTML = '';
+        weatherIcon.appendChild(imgElement);
+      };
+      
+      // Start loading the image (this triggers the onload event when ready)
+      imgElement.src = iconUrls.primary;
       
       // Show heat waves if temperature is above 28°C (keeping this feature)
       const heatWaves = document.getElementById('heat-waves');
