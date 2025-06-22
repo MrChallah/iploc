@@ -539,9 +539,9 @@
       // Start loading the image (this triggers the onload event when ready)
       imgElement.src = iconUrls.primary;
       
-      // Show heat waves if temperature is above 28°C (keeping this feature)
+      // Show heat waves if temperature is above 28°C AND wind speed is 15 km/h or above
       const heatWaves = document.getElementById('heat-waves');
-      const isHot = c > 28;
+      const isHot = c > 28 && windSpeed >= 15; // Updated condition: requires both heat AND wind
       if (heatWaves) {
         if (isHot) {
           heatWaves.style.display = 'inline-block';
