@@ -394,6 +394,35 @@
     };
   }
   
+  // Enhanced heat wave detection based on regional climate context
+  function determineHeatWaveThreshold(lat) {
+    // Regional temperature thresholds based on latitude and typical climate zones
+    const tempThresholds = {
+      // Arctic/Subarctic (above 60°N)
+      arctic: { threshold: 20, region: 'Arctic' },
+      // Northern temperate (45-60°N)  
+      northTemperate: { threshold: 28, region: 'Northern Temperate' },
+      // Mid temperate (30-45°N)
+      midTemperate: { threshold: 32, region: 'Mid Temperate' },
+      // Subtropical (15-30°N)
+      subtropical: { threshold: 35, region: 'Subtropical' },
+      // Tropical (0-15°N)
+      tropical: { threshold: 38, region: 'Tropical' },
+      // Southern hemisphere equivalents
+      southTropical: { threshold: 38, region: 'South Tropical' },
+      southSubtropical: { threshold: 35, region: 'South Subtropical' },
+      southTemperate: { threshold: 32, region: 'South Temperate' }
+    };
+    
+    const absLat = Math.abs(lat);
+    
+    if (absLat >= 60) return tempThresholds.arctic;
+    if (absLat >= 45) return lat > 0 ? tempThresholds.northTemperate : tempThresholds.southTemperate;
+    if (absLat >= 30) return tempThresholds.midTemperate;
+    if (absLat >= 15) return lat > 0 ? tempThresholds.subtropical : tempThresholds.southSubtropical;
+    return lat > 0 ? tempThresholds.tropical : tempThresholds.southTropical;
+  }
+  
   async function fetchWeather(lat, lon){
     try {
       // Enhanced API call with additional parameters for better condition detection
@@ -500,6 +529,26 @@
         desc = 'Sunny';
       }
       
+      // Get regional heat wave threshold
+      const heatThreshold = determineHeatWaveThreshold(lat);
+      console.log(`Heat wave threshold for region (${heatThreshold.region}): ${heatThreshold.threshold}°C`);
+      
+      // Check for heat wave conditions
+      const isHot = c >= heatThreshold.threshold; // Temperature-based only, regionally appropriate
+      
+      // Add wind description to weather text if windy
+      if (isVeryWindy) {
+        desc += ', Very Windy';
+      } else if (isWindy) {
+        desc += ', Windy';
+      }
+      
+      // Add heat wave description if applicable
+      if (isHot) {
+        desc += ', Heat Wave';
+      }
+      
+      // Set final weather text
       weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
       
       // Update weather icon with enhanced condition
@@ -539,13 +588,12 @@
       // Start loading the image (this triggers the onload event when ready)
       imgElement.src = iconUrls.primary;
       
-      // Show heat waves if temperature is above 28°C AND wind speed is 15 km/h or above
+      // Show heat waves based on regional threshold (no wind requirement)
       const heatWaves = document.getElementById('heat-waves');
-      const isHot = c > 28 && windSpeed >= 15; // Updated condition: requires both heat AND wind
       if (heatWaves) {
         if (isHot) {
           heatWaves.style.display = 'inline-block';
-          // Add class to position heat waves to the left if wind is also showing
+          // Position based on whether wind is also showing
           if (isWindy) {
             heatWaves.classList.add('with-wind');
           } else {
@@ -580,13 +628,6 @@
             }
           } else {
             windWaves.classList.add('only-wind');
-          }
-          
-          // Add wind description to weather text if windy
-          if (isVeryWindy) {
-            desc += ', Very Windy';
-          } else {
-            desc += ', Windy';
           }
         } else {
           windWaves.style.display = 'none';
