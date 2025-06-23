@@ -1,28 +1,48 @@
 # GPS + IP GEO Location Dual Mode Overlay - for Kick/Twitch/YouTube/Rumble and More!
 
-## Two Versions Available
+## Four Versions Available
 
 ### 🌐 IP-Only Version (Most Compatible) - Best for OBS/Prism Live
 **URL:** `https://mrchallah.github.io/iploc`
 - **Best for:** PRISM Live, OBS, XSplit, and most streaming apps
 - **Accuracy:** Lower (IP-based location)
 - **Compatibility:** Universal - works in all environments
+- **Weather Icons:** Japanese regional v4 repository icons
 - **Use case:** When you need maximum compatibility across different streaming platforms like OBS and PRISM Live Studio
 
 ### 📍 GPS + IP Version (Most Accurate) - Best for IRL Pro
-**URL:** `https://mrchallah.github.io`
+**URL:** `https://mrchallah.github.io/`
 - **Best for:** IRL Pro and GPS-capable environments
 - **Accuracy:** High (GPS + IP fallback)
 - **Compatibility:** Limited to GPS-friendly environments
+- **Weather Icons:** Japanese regional v4 repository icons
 - **Use case:** When you need precise location data and are using apps like IRL Pro
+
+### 🎨 Font Awesome IP-Only Version (Alternative Style)
+**URL:** `https://mrchallah.github.io/classiciploc`
+- **Best for:** Users who prefer Font Awesome icon style
+- **Accuracy:** Lower (IP-based location)
+- **Compatibility:** Universal - works in all environments
+- **Weather Icons:** Font Awesome icons with day/night variations
+- **Use case:** Alternative styling for OBS, PRISM Live, and streaming apps
+
+### 🎨📍 Font Awesome GPS + IP Version (Alternative Style + Accuracy)
+**URL:** `https://mrchallah.github.io/classic`
+- **Best for:** Users who prefer Font Awesome icons with GPS accuracy
+- **Accuracy:** High (GPS + IP fallback)
+- **Compatibility:** Limited to GPS-friendly environments, includes PRISM Live support
+- **Weather Icons:** Font Awesome icons with day/night variations
+- **Use case:** Alternative styling for IRL Pro and apps requiring GPS precision
 
 ## Quick Setup
 
 ### For PRISM Live / OBS / Most Streaming Apps
-Use the **IP-Only version**: `https://mrchallah.github.io/iploc`
+**Japanese Regional Icons:** `https://mrchallah.github.io/iploc`
+**Font Awesome Icons:** `https://mrchallah.github.io/classiciploc`
 
 ### For IRL Pro / GPS-Capable Apps
-Use the **GPS+IP version**: `https://mrchallah.github.io`
+**Japanese Regional Icons:** `https://mrchallah.github.io/`
+**Font Awesome Icons:** `https://mrchallah.github.io/classic`
 
 ## Features
 
@@ -46,7 +66,7 @@ Use the **GPS+IP version**: `https://mrchallah.github.io`
 - **GPS Caching** - Remembers recent GPS data for reliability
 
 ### 🌤️ Enhanced Weather Information
-- **Universal Japanese Regional Weather Icons** - Beautiful v4 repository icons for all users worldwide
+- **Two Icon Styles Available** - Choose between Japanese regional v4 icons or Font Awesome icons
 - **Enhanced Weather Detection** - Uses multiple Open-Meteo parameters (wind speed, precipitation, visibility, temperature) for comprehensive condition analysis
 - **Complete Weather Coverage** - Supports all weather conditions including:
   - Wind conditions (windy, wind with rain, blizzards)
@@ -56,10 +76,16 @@ Use the **GPS+IP version**: `https://mrchallah.github.io`
   - Special conditions (fog, dust, blowing snow)
 - **Smart Weather Logic** - Temperature-based descriptions (shows "Sunny" instead of "Clear" when temperature > 27°C)
 - **Day/Night Icon Variations** - Proper weather icons that change based on time of day
-- **Reliable Fallback System** - Automatically falls back to Google Maps icons if v4 icons fail to load
+- **Reliable Fallback System** - Japanese regional versions automatically fall back to Google Maps icons if v4 icons fail to load
 - **Current temperature** in both Celsius and Fahrenheit
 - **Detailed weather descriptions** with accurate condition mapping
 - **Powered by Open Meteo API** (no API key required)
+
+### 🎭 Heat Wave & Wind Effects
+- **Animated Heat Wave Indicator** - Shows when temperature exceeds regional thresholds
+- **Animated Wind Indicator** - Displays during windy conditions (>18 km/h)
+- **Smart Positioning** - Heat and wind effects position automatically based on combinations
+- **Regional Heat Wave Detection** - Intelligent temperature thresholds based on geographic location
 
 ### 📱 Mobile & App Optimized
 - Enhanced timeout settings for iOS devices
@@ -67,24 +93,41 @@ Use the **GPS+IP version**: `https://mrchallah.github.io`
 - Mobile-specific GPS handling
 - Responsive design for all screen sizes
 
-## Weather Icon System
+## Weather Icon Systems
 
-### 🎌 Universal Japanese Regional Icons
+### 🎌 Japanese Regional Icons (Default)
 
-**NEW**: All users worldwide now get the beautiful Japanese regional weather icons as the primary choice!
+**Primary choice for most users** - Beautiful distinctive v4 repository weather icon designs
 
-- **Premium Visual Experience** - Distinctive v4 repository weather icon designs for everyone
+- **Premium Visual Experience** - Distinctive v4 repository weather icon designs
 - **Enhanced Weather Detection** - Advanced condition analysis using wind speed, precipitation, visibility, and temperature
 - **Complete Weather Coverage** - Icons for all weather conditions including extreme weather, mixed precipitation, and severe storms
 - **Automatic Fallback** - Seamlessly falls back to Google Maps icons if v4 icons fail to load
 - **Day/Night Variations** - Proper time-of-day specific icons for enhanced accuracy
 
+### 🎨 Font Awesome Icons (Alternative)
+
+**Alternative choice for different visual preference** - Clean, standardized Font Awesome weather icons
+
+- **Consistent Font Awesome Style** - Uses familiar fa-sun, fa-cloud, fa-snowflake, etc. icons
+- **Day/Night Icon Variations** - fa-sun/fa-moon for clear conditions, fa-cloud-sun/fa-cloud-moon for partial clouds
+- **Enhanced Weather Mapping** - Comprehensive weather code mapping including:
+  - Clear/Sunny: fa-sun (day) / fa-moon (night)
+  - Partly Cloudy: fa-cloud-sun (day) / fa-cloud-moon (night)
+  - Rain: fa-cloud-rain / fa-cloud-showers-heavy (heavy rain)
+  - Snow: fa-snowflake for all snow conditions
+  - Thunderstorms: fa-cloud-bolt
+  - Fog: fa-eye-slash
+- **Heat & Wind Effects Preserved** - Still includes animated heat wave (fa-water) and wind (fa-wind) indicators
+- **No Fallback Needed** - Font Awesome icons load reliably from CDN
+
 ### 🌍 Comprehensive Weather Conditions
 
-The enhanced weather system now detects and displays icons for:
+Both icon systems detect and display icons for:
 
 #### 🌬️ **Wind Conditions**
-- Windy conditions (wind speed > 25 km/h)
+- Windy conditions (wind speed > 18 km/h)
+- Very windy conditions (wind speed > 35 km/h)
 - Wind with rain combinations
 - Blowing snow in cold conditions
 
@@ -111,7 +154,7 @@ The enhanced weather system now detects and displays icons for:
 
 ## Detailed Compatibility
 
-### IP-Only Version (`mrchallah.github.io/iploc`)
+### IP-Only Versions
 ✅ **Works Great With:**
 - PRISM Live
 - OBS Studio
@@ -125,7 +168,7 @@ The enhanced weather system now detects and displays icons for:
 - Less accurate location (city-level)
 - No GPS precision
 
-### GPS+IP Version (`mrchallah.github.io`)
+### GPS+IP Versions
 ✅ **Works Great With:**
 - IRL Pro
 - Desktop browsers with GPS
@@ -141,62 +184,71 @@ The enhanced weather system now detects and displays icons for:
 
 ### Method 1: Browser Source (OBS/Streaming Software)
 1. Add a new "Browser Source"
-2. Enter URL:
-   - For maximum compatibility: `https://mrchallah.github.io/iploc`
-   - For GPS accuracy: `https://mrchallah.github.io`
+2. Choose your preferred version:
+   - **Japanese Regional + IP**: `https://mrchallah.github.io/iploc`
+   - **Font Awesome + IP**: `https://mrchallah.github.io/classiciploc`
+   - **Japanese Regional + GPS**: `https://mrchallah.github.io/`
+   - **Font Awesome + GPS**: `https://mrchallah.github.io/classic`
 3. Set width: 800, height: 600 (or as needed)
 4. Check "Shutdown source when not visible" for performance
 
 ### Method 2: PRISM Live Overlay
 1. Go to PRISM Live overlay settings
-2. Add web overlay with URL: `https://mrchallah.github.io/iploc`
+2. Add web overlay with URL (choose IP-only version):
+   - **Japanese Regional**: `https://mrchallah.github.io/iploc`
+   - **Font Awesome**: `https://mrchallah.github.io/classiciploc`
 3. Position as desired
 
 ### Method 3: IRL Pro Integration
-1. Use URL: `https://mrchallah.github.io`
+1. Choose GPS version:
+   - **Japanese Regional**: `https://mrchallah.github.io/`
+   - **Font Awesome**: `https://mrchallah.github.io/classic`
 2. Allow location permissions when prompted
 3. IRL Pro's GPS data will be automatically detected and used
 
 ## Configuration
 
 ### Location Refresh
-Both versions auto-refresh location data every 90 seconds to ensure current information while preserving performance.
+All versions auto-refresh location data every 90 seconds to ensure current information while preserving performance.
 
-### App Detection (IP-Only Version)
-The IP-only version automatically detects streaming app environments and optimizes accordingly:
+### App Detection (IP-Only Versions)
+The IP-only versions automatically detect streaming app environments and optimize accordingly:
 - Skips GPS attempts in app environments
 - Uses specialized PRISM Live location interfaces
 - Falls back to multiple IP location services
 
 ### Enhanced Weather System
-- **Universal v4 Icons** - Japanese regional weather icons for all users worldwide
+- **Two Icon Style Options** - Choose between Japanese regional v4 icons or Font Awesome icons
 - **Multi-Parameter Detection** - Uses wind speed, precipitation, visibility, and temperature for accurate condition analysis
 - **Comprehensive Coverage** - All Google Weather API condition types supported with appropriate icons
-- **Smart Fallback System** - Reliable icon loading with automatic fallback to Google Maps icons
+- **Smart Fallback System** - Japanese regional versions have reliable icon loading with automatic fallback to Google Maps icons
 - **Advanced Weather Logic** - Temperature-aware descriptions and extreme weather detection
 
 ## API Dependencies
 
 ### No API Keys Required!
-Both versions use free services:
+All versions use free services:
 - **Reverse Geocoding**: Google Maps API (with Nominatim fallback)
 - **Weather**: Enhanced Open Meteo API with multi-parameter detection (wind_speed_10m, precipitation, visibility, temperature_2m, weather_code, is_day)
 - **IP Location**: Multiple free services (Google, IP-API, IPInfo, IPAPI.co)
-- **Weather Icons**: Universal v4 repository Japanese regional icons with Google Maps fallback
+- **Weather Icons**: 
+  - Japanese regional versions: Universal v4 repository icons with Google Maps fallback
+  - Font Awesome versions: Font Awesome 6.5.0 from CDN
 
 ## Styling & Customization
 
 ### Visual Design
 - Transparent background for overlay use
 - White text with black shadow for maximum visibility
-- Font Awesome icons for professional appearance
+- Professional icon systems (Japanese regional or Font Awesome)
 - Responsive layout that works on any screen size
 - Enhanced weather icons with drop shadows for better visibility
 
 ### Icons Used
 - 🕒 Clock icon for time display
 - 📍 Location dot for place information  
-- 🎌 Dynamic Japanese regional weather icons that change based on conditions, time of day, and weather parameters
+- 🎌 **Japanese Regional**: Dynamic v4 repository weather icons that change based on conditions, time of day, and weather parameters
+- 🎨 **Font Awesome**: Standard Font Awesome weather icons (fa-sun, fa-cloud, fa-snowflake, etc.) with day/night variations
 
 ## Browser Compatibility
 
@@ -208,38 +260,45 @@ Both versions use free services:
 - Mobile browsers (iOS Safari, Chrome Mobile)
 
 ### Required Permissions
-- **GPS Version**: Location access required
-- **IP Version**: No permissions needed
-- **Both**: Internet connection required
+- **GPS Versions**: Location access required
+- **IP Versions**: No permissions needed
+- **All**: Internet connection required
 
 ## Troubleshooting
 
-### Location Not Loading (IP Version)
+### Location Not Loading (IP Versions)
 1. **Check internet connection**: Ensure network connectivity
 2. **Try different browser**: Some corporate networks block location services
 3. **Clear browser cache**: Refresh the page completely
 
-### Location Not Loading (GPS Version)  
+### Location Not Loading (GPS Versions)  
 1. **Check browser permissions**: Ensure location access is granted
 2. **HTTPS required**: Modern browsers require HTTPS for GPS access
-3. **Try IP version**: Use `mrchallah.github.io/iploc` as fallback
+3. **Try IP version**: Use IP-only versions as fallback
 4. **Indoor GPS issues**: GPS accuracy decreases indoors
 
 ### Weather Not Displaying
 1. **Internet connectivity**: Verify network access
 2. **Temporary service issue**: Weather API might be temporarily unavailable
 3. **Refresh page**: Try reloading the overlay
-4. **Icon fallback**: v4 icons automatically fall back to Google Maps icons if needed
+4. **Icon fallback**: Japanese regional versions automatically fall back to Google Maps icons if needed
 
 ### PRISM Live Issues
-1. **Use IP version**: Make sure you're using `mrchallah.github.io/iploc`
+1. **Use IP version**: Make sure you're using IP-only versions
 2. **Check overlay settings**: Ensure web overlay is properly configured
 3. **Browser permissions**: Some versions require location permissions
 
 ## Recent Updates
 
-### Major Weather System Overhaul
-- **Universal Japanese Regional Icons** - All users worldwide now get beautiful v4 repository weather icons
+### New Font Awesome Icon Versions
+- **Alternative Icon Style** - Added Font Awesome weather icon versions for users who prefer this style
+- **Complete Feature Parity** - Font Awesome versions include all advanced features (heat waves, wind detection, regional thresholds)
+- **Four Total Versions** - Now offering both Japanese regional and Font Awesome icon styles in both IP-only and GPS+IP variants
+- **Day/Night Icon Support** - Font Awesome versions include proper day/night icon variations
+- **Preserved Animations** - Heat wave and wind effect animations maintained in Font Awesome versions
+
+### Major Weather System Features
+- **Universal Japanese Regional Icons** - Beautiful v4 repository weather icons as primary option
 - **Enhanced Weather Detection** - Multi-parameter analysis using wind speed, precipitation, visibility, and temperature
 - **Complete Weather Coverage** - Support for all weather conditions including extreme weather, mixed precipitation, and severe storms
 - **Smart Condition Logic** - Advanced weather condition detection beyond basic weather codes
@@ -258,20 +317,20 @@ Both versions use free services:
 ## Performance Tips
 
 ### For Streaming
-- Use IP version for better stability during streams
+- Use IP versions for better stability during streams
 - Position overlay in a corner to avoid content interference
 - Test before going live to ensure proper functionality
-- Weather icons now load more reliably with improved fallback system
+- Weather icons now load more reliably with improved fallback system (Japanese regional) or reliable CDN (Font Awesome)
 
 ### For Mobile IRL Streaming
-- GPS version works best with IRL Pro
-- IP version recommended for other mobile streaming apps
+- GPS versions work best with IRL Pro
+- IP versions recommended for other mobile streaming apps
 - Consider battery impact of GPS usage
-- All users now get premium Japanese regional weather icons automatically
+- All users can choose between Japanese regional or Font Awesome weather icons
 
 ## Version History & Updates
 
-The overlays are automatically updated on the GitHub Pages hosting, so you'll always get the latest version by using the URLs above. Recent major updates include the universal Japanese regional weather icon system and comprehensive multi-parameter weather detection.
+The overlays are automatically updated on the GitHub Pages hosting, so you'll always get the latest version by using the URLs above. Recent major updates include the universal Japanese regional weather icon system, comprehensive multi-parameter weather detection, and new Font Awesome icon alternatives.
 
 ## License
 
@@ -284,10 +343,12 @@ Feel free to submit issues, feature requests, or pull requests to improve the ov
 ---
 
 **Quick Reference:**
-- **Maximum Compatibility**: `https://mrchallah.github.io/iploc`
-- **Maximum Accuracy**: `https://mrchallah.github.io`
-- **PRISM Live**: Use IP version
-- **IRL Pro**: Use GPS version
-- **OBS/XSplit**: Use IP version
-- **Weather Icons**: Universal Japanese regional v4 icons for everyone
+- **Maximum Compatibility (Japanese)**: `https://mrchallah.github.io/iploc`
+- **Maximum Compatibility (Font Awesome)**: `https://mrchallah.github.io/classiciploc`
+- **Maximum Accuracy (Japanese)**: `https://mrchallah.github.io/`
+- **Maximum Accuracy (Font Awesome)**: `https://mrchallah.github.io/classic`
+- **PRISM Live**: Use IP versions
+- **IRL Pro**: Use GPS versions
+- **OBS/XSplit**: Use IP versions
+- **Weather Icons**: Choose between Japanese regional v4 icons or Font Awesome icons
 - **Weather Coverage**: Complete multi-parameter weather detection system 
