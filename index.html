@@ -443,8 +443,8 @@
       const visibility = j.current.visibility || 10000;
       
       // Wind conditions - now as secondary effects only
-      let isWindy = windSpeed > 15; // Lowered from 20 to 10 km/h
-      let isVeryWindy = windSpeed > 32; // Lowered from 40 to 25 km/h
+      let isWindy = windSpeed > 18; // Lowered from 20 to 10 km/h
+      let isVeryWindy = windSpeed > 35; // Lowered from 40 to 25 km/h
       
       // Add debug logging for wind detection
       console.log('Wind speed:', windSpeed, 'km/h, isWindy:', isWindy, 'isVeryWindy:', isVeryWindy);
@@ -617,7 +617,7 @@
           console.log('Attempting to show wind waves...');
           
           // Load windy.svg icon
-          const repoBaseUrl = 'https://raw.githubusercontent.com/MrChallah/MrChallah.github.io/main/v4/';
+          const repoBaseUrl = 'https://mrchallah.github.io/v4/';
           const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
           
           // Clear any existing error handlers
