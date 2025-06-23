@@ -251,10 +251,10 @@ The IP-only versions automatically detect streaming app environments and optimiz
 - Falls back to multiple IP location services
 
 ### Enhanced Weather System
-- **Two Icon Style Options** - Choose between Japanese regional v4 icons or Font Awesome icons
+- **Three Icon Style Options** - Choose between Japanese regional v4 icons, Font Awesome icons, or high-contrast black & white monochrome icons
 - **Multi-Parameter Detection** - Uses wind speed, precipitation, visibility, and temperature for accurate condition analysis
 - **Comprehensive Coverage** - All Google Weather API condition types supported with appropriate icons
-- **Smart Fallback System** - Japanese regional versions have reliable icon loading with automatic fallback to Google Maps icons
+- **Smart Fallback System** - Japanese regional and black & white versions have reliable icon loading with automatic fallback to Google Maps icons
 - **Advanced Weather Logic** - Temperature-aware descriptions and extreme weather detection
 
 ## API Dependencies
@@ -267,6 +267,7 @@ All versions use free services:
 - **Weather Icons**: 
   - Japanese regional versions: Universal v4 repository icons with Google Maps fallback
   - Font Awesome versions: Font Awesome 6.5.0 from CDN
+  - Black & White versions: High-contrast filtered v4 repository icons with Google Maps fallback
 
 ## Styling & Customization
 
@@ -282,6 +283,7 @@ All versions use free services:
 - 📍 Location dot for place information  
 - 🎌 **Japanese Regional**: Dynamic v4 repository weather icons that change based on conditions, time of day, and weather parameters
 - 🎨 **Font Awesome**: Standard Font Awesome weather icons (fa-sun, fa-cloud, fa-snowflake, etc.) with day/night variations
+- ⚫⚪ **Black & White**: High-contrast monochrome v4 repository weather icons with advanced CSS filtering for crisp black and white display
 
 ## Browser Compatibility
 
@@ -323,10 +325,18 @@ All versions use free services:
 
 ## Recent Updates
 
-### New Font Awesome Icon Versions
+### New Black & White Monochrome Versions
+- **High-Contrast Monochrome Style** - Added black & white monochrome versions for minimalist and high-contrast streaming setups
+- **Advanced CSS Filtering** - Uses sophisticated grayscale and contrast filters to create crisp black and white weather icons
+- **Perfect for Themes** - Ideal for black & white overlays, minimalist streaming themes, or accessibility needs
+- **Complete Feature Parity** - Black & white versions include all advanced features (heat waves, wind detection, regional thresholds)
+- **Six Total Versions** - Now offering Japanese regional, Font Awesome, and black & white icon styles in both IP-only and GPS+IP variants
+- **Preserved Visual Quality** - Maintains all the detail and beauty of the original v4 repository icons in monochrome format
+
+### Font Awesome Icon Versions
 - **Alternative Icon Style** - Added Font Awesome weather icon versions for users who prefer this style
 - **Complete Feature Parity** - Font Awesome versions include all advanced features (heat waves, wind detection, regional thresholds)
-- **Four Total Versions** - Now offering both Japanese regional and Font Awesome icon styles in both IP-only and GPS+IP variants
+- **Six Total Versions** - Now offering Japanese regional, Font Awesome, and black & white icon styles in both IP-only and GPS+IP variants
 - **Day/Night Icon Support** - Font Awesome versions include proper day/night icon variations
 - **Preserved Animations** - Heat wave and wind effect animations maintained in Font Awesome versions
 
@@ -359,7 +369,7 @@ All versions use free services:
 - GPS versions work best with IRL Pro
 - IP versions recommended for other mobile streaming apps
 - Consider battery impact of GPS usage
-- All users can choose between Japanese regional or Font Awesome weather icons
+- All users can choose between Japanese regional, Font Awesome, or black & white monochrome weather icons
 
 ## Version History & Updates
 
@@ -378,10 +388,12 @@ Feel free to submit issues, feature requests, or pull requests to improve the ov
 **Quick Reference:**
 - **Maximum Compatibility (Japanese)**: `https://mrchallah.github.io/iploc`
 - **Maximum Compatibility (Font Awesome)**: `https://mrchallah.github.io/classiciploc`
+- **Maximum Compatibility (Black & White)**: `https://mrchallah.github.io/bwiploc`
 - **Maximum Accuracy (Japanese)**: `https://mrchallah.github.io/`
 - **Maximum Accuracy (Font Awesome)**: `https://mrchallah.github.io/classic`
+- **Maximum Accuracy (Black & White)**: `https://mrchallah.github.io/bw`
 - **PRISM Live**: Use IP versions
 - **IRL Pro**: Use GPS versions
 - **OBS/XSplit**: Use IP versions
-- **Weather Icons**: Choose between Japanese regional v4 icons or Font Awesome icons
+- **Weather Icons**: Choose between Japanese regional v4 icons, Font Awesome icons, or black & white monochrome icons
 - **Weather Coverage**: Complete multi-parameter weather detection system 
