@@ -443,8 +443,11 @@
       const visibility = j.current.visibility || 10000;
       
       // Wind conditions - now as secondary effects only
-      let isWindy = windSpeed > 15;
-      let isVeryWindy = windSpeed > 27;
+      let isWindy = windSpeed > 10; // Lowered from 20 to 10 km/h
+      let isVeryWindy = windSpeed > 25; // Lowered from 40 to 25 km/h
+      
+      // Add debug logging for wind detection
+      console.log('Wind speed:', windSpeed, 'km/h, isWindy:', isWindy, 'isVeryWindy:', isVeryWindy);
       
       // Don't override main weather condition for wind - keep original condition
       // Wind will be shown as secondary effect below
@@ -607,36 +610,83 @@
       
       // Show wind waves if windy conditions
       const windWaves = document.getElementById('wind-waves');
+      console.log('Wind waves element found:', !!windWaves, 'isWindy:', isWindy);
+      
       if (windWaves) {
         if (isWindy) {
+          console.log('Attempting to show wind waves...');
+          
           // Load windy.svg icon
           const repoBaseUrl = 'https://raw.githubusercontent.com/MrChallah/MrChallah.github.io/main/v4/';
           const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
           
-          windWaves.src = repoBaseUrl + 'windy.svg';
+          // Clear any existing error handlers
+          windWaves.onerror = null;
+          windWaves.onload = null;
+          
+          // Set up error handler first
           windWaves.onerror = function() {
+            console.log('Primary wind icon failed, trying fallback...');
+            this.onerror = function() {
+              console.log('Fallback wind icon also failed, using text fallback');
+              // If both icons fail, create a text-based wind indicator
+              this.style.display = 'none';
+              
+              // Create a text-based wind indicator as last resort
+              let textWind = document.getElementById('text-wind-indicator');
+              if (!textWind) {
+                textWind = document.createElement('span');
+                textWind.id = 'text-wind-indicator';
+                textWind.innerHTML = '💨';
+                textWind.style.cssText = 'position: absolute; top: 30px; left: 97%; transform: translateX(-50%); font-size: 12px; animation: windWave 1.5s ease-in-out infinite;';
+                weatherIcon.appendChild(textWind);
+              }
+              textWind.style.display = 'inline-block';
+            };
             this.src = fallbackUrl + 'windy_breezy.svg';
           };
+          
+          // Set up success handler
+          windWaves.onload = function() {
+            console.log('Wind icon loaded successfully');
+          };
+          
+          // Set the primary source
+          windWaves.src = repoBaseUrl + 'windy.svg';
           windWaves.style.display = 'inline-block';
+          
+          console.log('Wind waves display set to inline-block, src:', windWaves.src);
           
           // Position wind waves - if no heat, center it; if heat, keep it to the right
           if (isHot) {
             windWaves.classList.remove('only-wind');
+            console.log('Wind waves positioned with heat waves');
             // Update heat waves to show they're with wind
             if (heatWaves) {
               heatWaves.classList.add('with-wind');
             }
           } else {
             windWaves.classList.add('only-wind');
+            console.log('Wind waves positioned alone (only-wind)');
           }
         } else {
+          console.log('Not windy enough, hiding wind waves');
           windWaves.style.display = 'none';
           windWaves.classList.remove('only-wind');
+          
+          // Also hide text wind indicator if it exists
+          const textWind = document.getElementById('text-wind-indicator');
+          if (textWind) {
+            textWind.style.display = 'none';
+          }
+          
           // Remove wind class from heat waves
           if (heatWaves) {
             heatWaves.classList.remove('with-wind');
           }
         }
+      } else {
+        console.error('Wind waves element not found!');
       }
     } catch (error) {
       console.error('Weather fetch failed:', error);
