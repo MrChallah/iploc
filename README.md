@@ -1,6 +1,6 @@
 # GPS + IP GEO Location Dual Mode Overlay - for Kick/Twitch/YouTube/Rumble and More!
 
-## Four Versions Available
+## Six Versions Available
 
 ### 🌐 IP-Only Version (Most Compatible) - Best for OBS/Prism Live
 **URL:** `https://mrchallah.github.io/iploc`
@@ -34,15 +34,33 @@
 - **Weather Icons:** Font Awesome icons with day/night variations
 - **Use case:** Alternative styling for IRL Pro and apps requiring GPS precision
 
+### ⚫⚪ Black & White IP-Only Version (Monochrome Style)
+**URL:** `https://mrchallah.github.io/bwiploc`
+- **Best for:** Monochrome overlays, minimalist streaming setups
+- **Accuracy:** Lower (IP-based location)
+- **Compatibility:** Universal - works in all environments
+- **Weather Icons:** High-contrast black & white Japanese regional v4 repository icons
+- **Use case:** Perfect for black & white themes, minimalist overlays, or high-contrast streaming setups
+
+### ⚫⚪📍 Black & White GPS + IP Version (Monochrome Style + Accuracy)
+**URL:** `https://mrchallah.github.io/bw`
+- **Best for:** Monochrome overlays with GPS precision
+- **Accuracy:** High (GPS + IP fallback)
+- **Compatibility:** Limited to GPS-friendly environments
+- **Weather Icons:** High-contrast black & white Japanese regional v4 repository icons
+- **Use case:** Monochrome styling for IRL Pro and apps requiring GPS precision
+
 ## Quick Setup
 
 ### For PRISM Live / OBS / Most Streaming Apps
 **Japanese Regional Icons:** `https://mrchallah.github.io/iploc`
 **Font Awesome Icons:** `https://mrchallah.github.io/classiciploc`
+**Black & White Monochrome:** `https://mrchallah.github.io/bwiploc`
 
 ### For IRL Pro / GPS-Capable Apps
 **Japanese Regional Icons:** `https://mrchallah.github.io/`
 **Font Awesome Icons:** `https://mrchallah.github.io/classic`
+**Black & White Monochrome:** `https://mrchallah.github.io/bw`
 
 ## Features
 
@@ -121,6 +139,17 @@
 - **Heat & Wind Effects Preserved** - Still includes animated heat wave (fa-water) and wind (fa-wind) indicators
 - **No Fallback Needed** - Font Awesome icons load reliably from CDN
 
+### 🎨⚫⚪ Black & White Monochrome Icons (Minimalist)
+
+**Perfect for monochrome themes and high-contrast setups** - High-contrast black and white Japanese regional icons
+
+- **High-Contrast Design** - Uses advanced CSS filters to create crisp black and white icons from beautiful v4 repository designs
+- **Preserves Icon Detail** - Maintains all the visual details and shapes of the original Japanese regional icons
+- **True Black & White** - Advanced threshold filtering creates proper contrast between different icon elements
+- **Minimalist Aesthetic** - Perfect for black & white streaming themes, minimalist overlays, or high-contrast accessibility needs
+- **Same Feature Set** - Includes all advanced weather detection, heat waves, wind indicators, and day/night variations
+- **Automatic Fallback** - Still benefits from the reliable fallback system to Google Maps icons
+
 ### 🌍 Comprehensive Weather Conditions
 
 Both icon systems detect and display icons for:
@@ -187,8 +216,10 @@ Both icon systems detect and display icons for:
 2. Choose your preferred version:
    - **Japanese Regional + IP**: `https://mrchallah.github.io/iploc`
    - **Font Awesome + IP**: `https://mrchallah.github.io/classiciploc`
+   - **Black & White + IP**: `https://mrchallah.github.io/bwiploc`
    - **Japanese Regional + GPS**: `https://mrchallah.github.io/`
    - **Font Awesome + GPS**: `https://mrchallah.github.io/classic`
+   - **Black & White + GPS**: `https://mrchallah.github.io/bw`
 3. Set width: 800, height: 600 (or as needed)
 4. Check "Shutdown source when not visible" for performance
 
@@ -197,12 +228,14 @@ Both icon systems detect and display icons for:
 2. Add web overlay with URL (choose IP-only version):
    - **Japanese Regional**: `https://mrchallah.github.io/iploc`
    - **Font Awesome**: `https://mrchallah.github.io/classiciploc`
+   - **Black & White**: `https://mrchallah.github.io/bwiploc`
 3. Position as desired
 
 ### Method 3: IRL Pro Integration
 1. Choose GPS version:
    - **Japanese Regional**: `https://mrchallah.github.io/`
    - **Font Awesome**: `https://mrchallah.github.io/classic`
+   - **Black & White**: `https://mrchallah.github.io/bw`
 2. Allow location permissions when prompted
 3. IRL Pro's GPS data will be automatically detected and used
 
