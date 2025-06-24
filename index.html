@@ -59,6 +59,38 @@
     50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
   }
   
+  .fog-waves {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    animation: fogWave 3s ease-in-out infinite;
+  }
+  
+  .fog-waves.with-heat {
+    left: 1%;
+  }
+  
+  .fog-waves.with-wind {
+    left: 97%;
+  }
+  
+  .fog-waves.with-heat-wind {
+    top: 50px;
+    left: 25%;
+  }
+  
+  @keyframes fogWave {
+    0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.6; }
+    50% { transform: translateX(-50%) translateY(-1px); opacity: 0.9; }
+  }
+  
+  .secondary-icons-container {
+    position: relative;
+    display: inline-block;
+  }
+  
   .icon-text-shadow {
     color: white;
     font-size: 1.3em;
@@ -78,10 +110,11 @@
     </div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
-        <span id="weather-icon" class="weather-icon">
+        <span id="weather-icon" class="weather-icon secondary-icons-container">
           <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
           <i id="heat-waves" class="fa-solid fa-water heat-waves" style="display: none;"></i>
-          <img id="wind-waves" class="wind-waves" style="display: none; width: 16px; height: 16px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);" alt="Windy" />
+          <i id="wind-waves" class="fa-solid fa-wind wind-waves" style="display: none;"></i>
+          <img id="fog-waves" class="fog-waves" style="display: none; width: 14px; height: 14px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);" alt="Foggy" />
         </span>
       </span>
       <span id="weather">--°C</span>
