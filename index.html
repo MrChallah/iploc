@@ -191,6 +191,58 @@
           });
         }
         
+        // Smart redundancy removal
+        function areLocationsSimilar(loc1, loc2) {
+          if (!loc1 || !loc2) return false;
+          
+          // Exact match
+          if (loc1 === loc2) return true;
+          
+          // One contains the other (case insensitive)
+          const l1 = loc1.toLowerCase();
+          const l2 = loc2.toLowerCase();
+          if (l1.includes(l2) || l2.includes(l1)) return true;
+          
+          // Check for common administrative redundancy patterns
+          const adminPatterns = [
+            { shorter: l1, longer: l2 + ' region' },
+            { shorter: l1, longer: l2 + ' province' },
+            { shorter: l1, longer: l2 + ' state' },
+            { shorter: l1, longer: l2 + ' prefecture' },
+            { shorter: l1, longer: l2 + ' district' },
+            { shorter: l2, longer: l1 + ' region' },
+            { shorter: l2, longer: l1 + ' province' },
+            { shorter: l2, longer: l1 + ' state' },
+            { shorter: l2, longer: l1 + ' prefecture' },
+            { shorter: l2, longer: l1 + ' district' }
+          ];
+          
+          return adminPatterns.some(pattern => 
+            pattern.shorter === pattern.longer.replace(/\s+(region|province|state|prefecture|district)$/, '')
+          );
+        }
+        
+        // Remove redundant components
+        if (areLocationsSimilar(city, state)) {
+          console.log('Detected redundant city/state:', city, '/', state);
+          // Keep the more specific one (usually the shorter one, or the one without administrative terms)
+          if (city.length <= state.length && !city.toLowerCase().includes('region') && 
+              !city.toLowerCase().includes('province') && !city.toLowerCase().includes('state')) {
+            state = ''; // Keep city, remove state
+            console.log('Keeping city:', city, 'removing state');
+          } else {
+            city = ''; // Keep state as city, remove redundant city
+            console.log('Using state as city:', state);
+          }
+        }
+        
+        // If city is empty after redundancy check, use state as city
+        if (!city && state) {
+          city = state;
+          state = '';
+          console.log('Using state as city after redundancy check:', city);
+        }
+        
         // Build address string, prioritizing the most specific location
         const parts = [
           city,
@@ -218,7 +270,23 @@
                  part.length > 2; // Reasonable length
         });
         
-        return broadParts.join(", ");
+        // Additional redundancy check for formatted address parts
+        const filteredParts = [];
+        broadParts.forEach((part, index) => {
+          const isRedundant = filteredParts.some(existingPart => {
+            const p1 = part.toLowerCase();
+            const p2 = existingPart.toLowerCase();
+            return p1.includes(p2) || p2.includes(p1) || 
+                   p1.replace(/\s+(region|province|state|prefecture|district)$/, '') === p2 ||
+                   p2.replace(/\s+(region|province|state|prefecture|district)$/, '') === p1;
+          });
+          
+          if (!isRedundant) {
+            filteredParts.push(part);
+          }
+        });
+        
+        return filteredParts.join(", ");
       }
       
       throw new Error('No results from Google Geocoding');
@@ -259,7 +327,21 @@
       
       // Only set state if it's different from city and doesn't contain administrative terms
       if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
-        state = addr.state;
+        // Check for redundancy with Nominatim data too
+        const cityLower = city.toLowerCase();
+        const stateLower = addr.state.toLowerCase();
+        
+        const isRedundant = cityLower === stateLower ||
+                           cityLower.includes(stateLower) || 
+                           stateLower.includes(cityLower) ||
+                           cityLower === stateLower.replace(/\s+(region|province|state|prefecture|district)$/, '') ||
+                           stateLower === cityLower.replace(/\s+(region|province|state|prefecture|district)$/, '');
+        
+        if (!isRedundant) {
+          state = addr.state;
+        } else {
+          console.log('Detected Nominatim redundancy between city and state:', city, '/', addr.state);
+        }
       }
       
       const parts = [city, state, country].filter(Boolean);
