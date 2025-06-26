@@ -65,18 +65,28 @@
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
   }
   
+  .info-separator {
+    margin: 0 15px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
   .weather-row {
     margin-top: -4.25px;
   }
   </style></head><body class="text-white">
   
-  <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
+  <div id="info" class="position-absolute top-0 start-0 m-2 d-flex align-items-center gap-3 p-3 rounded">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
+      <i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i>
+      <span id="time">--:--:--</span>
+    </div>
+    <span class="info-separator">|</span>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
       <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
       <span id="place">Waiting…</span>
     </div>
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
+    <span class="info-separator">|</span>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
       <span class="info-icon me-2">
         <span id="weather-icon" class="weather-icon">
           <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
@@ -1162,8 +1172,8 @@
         }
       }
       
-      // Try Method 2: Browser GPS (but skip in app environments where it often fails)
-      if (!locationData && (!gpsAttempted || gpsSuccessful) && !isInApp) {
+      // Try Method 2: Browser GPS - Allow retries even after previous failures (but skip in app environments)
+      if (!locationData && !isInApp) {
         try {
           locationData = await getBrowserGPS(showLoadingMessages);
           gpsAttempted = true;
@@ -1185,13 +1195,15 @@
         }
       }
       
-      // Use last known GPS location only if it's very recent (within 5 minutes) and GPS just failed
-      if (!locationData && gpsSuccessful && lastKnownLocation && lastKnownLocation.source.includes('GPS') && consecutiveGPSFailures === 1) {
+      // Use last known location as final fallback (expanded conditions)
+      if (!locationData && lastKnownLocation) {
         const now = Date.now();
         const locationAge = now - (lastKnownLocation.timestamp || 0);
-        if (locationAge < 300000) { // 5 minutes
+        
+        // Use cached location if it's recent (within 10 minutes) or if all methods failed
+        if (locationAge < 600000) { // 10 minutes instead of 5
           locationData = lastKnownLocation;
-          console.log('Using cached GPS location');
+          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes)');
         }
       }
       
@@ -1207,18 +1219,27 @@
         fetchWeather(locationData.lat, locationData.lon);
         console.log('Location updated:', locationData.source, label);
       } else {
-        throw new Error('No location data available from any source');
+        // Only show "Location N/A" if we truly have no fallback options
+        console.error('No location data available from any source');
+        if (showLoadingMessages) {
+          placeEl.textContent = "Location N/A";
+          weatherEl.textContent = "Weather N/A";
+        }
+        // Don't update display during silent refreshes to avoid flashing "N/A"
       }
       
     } catch (e) {
       console.error('Location update failed:', e);
-      placeEl.textContent = "Location N/A";
-      weatherEl.textContent = "Weather N/A";
+      // Only show error during initial load or user-initiated refresh
+      if (showLoadingMessages) {
+        placeEl.textContent = "Location N/A";
+        weatherEl.textContent = "Weather N/A";
+      }
     }
   }
   
-  // Auto-refresh every 55 seconds (without loading messages)
-  setInterval(() => updateLocationAndWeather(false), 55000);
+  // Auto-refresh every 35 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 35000);
   
   // Debug function to detect available location interfaces
   function debugLocationInterfaces() {
