@@ -97,6 +97,8 @@
   let gpsSuccessful = false;
   let gpsAttempted = false;
   let consecutiveGPSFailures = 0;
+  let lastWeatherData = null; // Cache last successful weather
+  let lastWeatherTimestamp = 0; // Track when weather was last fetched
   
   // Detect if we're on mobile
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
