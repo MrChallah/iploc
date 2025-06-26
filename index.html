@@ -427,7 +427,7 @@
     
     // v4 repository weather icon mapping (now primary for everyone)
     const v4IconMap = {
-      'CLEAR': isDay ? 'sunny.svg' : 'clear_night.svg',
+      'CLEAR': isDay ? 'sunny_day.svg' : 'clear_night.svg',
       'MOSTLY_CLEAR': isDay ? 'mostly_clear_day.svg' : 'mostly_clear_night.svg',
       'PARTLY_CLOUDY': isDay ? 'partly_cloudy_day.svg' : 'partly_cloudy_night.svg',
       'MOSTLY_CLOUDY': isDay ? 'mostly_cloudy_day.svg' : 'mostly_cloudy_night.svg',
@@ -1217,8 +1217,8 @@
     }
   }
   
-  // Auto-refresh every 35 seconds (without loading messages)
-  setInterval(() => updateLocationAndWeather(false), 35000);
+  // Auto-refresh every 55 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 55000);
   
   // Debug function to detect available location interfaces
   function debugLocationInterfaces() {
@@ -1260,26 +1260,5 @@
   
   // Start immediately (with loading messages)
   updateLocationAndWeather(true);
-  
-  // Lightweight check for location changes
-  function hasLocationChanged(newLocation, oldLocation) {
-    if (!oldLocation || !newLocation) return true;
-    
-    // Use different thresholds based on location source
-    const isGPS = newLocation.source && (newLocation.source.includes('GPS') || newLocation.source.includes('IRL Pro'));
-    const threshold = isGPS ? 0.001 : 0.01; // ~100m for GPS, ~1km for IP location
-    
-    // Consider location changed if moved more than the threshold
-    const latDiff = Math.abs(newLocation.lat - oldLocation.lat);
-    const lonDiff = Math.abs(newLocation.lon - oldLocation.lon);
-    
-    const changed = latDiff > threshold || lonDiff > threshold;
-    if (changed) {
-      console.log(`Location change detected (${isGPS ? 'GPS' : 'IP'} threshold: ${threshold}):`, 
-        { latDiff: latDiff.toFixed(6), lonDiff: lonDiff.toFixed(6) });
-    }
-    
-    return changed;
-  }
   </script>
   </body></html> 
