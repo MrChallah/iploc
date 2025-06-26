@@ -1260,5 +1260,26 @@
   
   // Start immediately (with loading messages)
   updateLocationAndWeather(true);
+  
+  // Lightweight check for location changes
+  function hasLocationChanged(newLocation, oldLocation) {
+    if (!oldLocation || !newLocation) return true;
+    
+    // Use different thresholds based on location source
+    const isGPS = newLocation.source && (newLocation.source.includes('GPS') || newLocation.source.includes('IRL Pro'));
+    const threshold = isGPS ? 0.001 : 0.01; // ~100m for GPS, ~1km for IP location
+    
+    // Consider location changed if moved more than the threshold
+    const latDiff = Math.abs(newLocation.lat - oldLocation.lat);
+    const lonDiff = Math.abs(newLocation.lon - oldLocation.lon);
+    
+    const changed = latDiff > threshold || lonDiff > threshold;
+    if (changed) {
+      console.log(`Location change detected (${isGPS ? 'GPS' : 'IP'} threshold: ${threshold}):`, 
+        { latDiff: latDiff.toFixed(6), lonDiff: lonDiff.toFixed(6) });
+    }
+    
+    return changed;
+  }
   </script>
   </body></html> 
