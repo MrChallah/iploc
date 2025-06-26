@@ -65,28 +65,18 @@
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
   }
   
-  .info-separator {
-    margin: 0 15px;
-    color: rgba(255, 255, 255, 0.5);
-  }
-  
   .weather-row {
     margin-top: -4.25px;
   }
   </style></head><body class="text-white">
   
-  <div id="info" class="position-absolute top-0 start-0 m-2 d-flex align-items-center gap-3 p-3 rounded">
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
-      <i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i>
-      <span id="time">--:--:--</span>
-    </div>
-    <span class="info-separator">|</span>
+  <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
       <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
       <span id="place">Waiting…</span>
     </div>
-    <span class="info-separator">|</span>
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
         <span id="weather-icon" class="weather-icon">
           <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
@@ -1238,8 +1228,8 @@
     }
   }
   
-  // Auto-refresh every 35 seconds (without loading messages)
-  setInterval(() => updateLocationAndWeather(false), 35000);
+  // Auto-refresh every 55 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 55000);
   
   // Debug function to detect available location interfaces
   function debugLocationInterfaces() {
