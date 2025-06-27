@@ -197,31 +197,45 @@
         function areLocationsSimilar(loc1, loc2) {
           if (!loc1 || !loc2) return false;
           
-          // Exact match
-          if (loc1 === loc2) return true;
+          const l1 = loc1.toLowerCase().trim();
+          const l2 = loc2.toLowerCase().trim();
           
-          // One contains the other (case insensitive)
-          const l1 = loc1.toLowerCase();
-          const l2 = loc2.toLowerCase();
-          if (l1.includes(l2) || l2.includes(l1)) return true;
+          // Exact match
+          if (l1 === l2) return true;
+          
+          // Only check substring matches if the strings are very similar in length
+          // and one is a clear subset with meaningful overlap (not just coincidental letters)
+          if (Math.abs(l1.length - l2.length) <= 3) {
+            // Check if one completely contains the other with significant overlap
+            if ((l1.includes(l2) && l2.length >= 4) || (l2.includes(l1) && l1.length >= 4)) {
+              // Additional check: make sure they're not just common words that happen to overlap
+              // Avoid false positives like "San Francisco" vs "California"
+              const commonWords = ['san', 'los', 'las', 'new', 'saint', 'st', 'mount', 'fort'];
+              const l1Words = l1.split(/\s+/);
+              const l2Words = l2.split(/\s+/);
+              
+              // If they share only common words, don't consider them similar
+              const sharedWords = l1Words.filter(word => l2Words.includes(word));
+              const significantSharedWords = sharedWords.filter(word => !commonWords.includes(word) && word.length > 2);
+              
+              // Only consider similar if there are significant shared words
+              if (significantSharedWords.length > 0) {
+                return true;
+              }
+            }
+          }
           
           // Check for common administrative redundancy patterns
-          const adminPatterns = [
-            { shorter: l1, longer: l2 + ' region' },
-            { shorter: l1, longer: l2 + ' province' },
-            { shorter: l1, longer: l2 + ' state' },
-            { shorter: l1, longer: l2 + ' prefecture' },
-            { shorter: l1, longer: l2 + ' district' },
-            { shorter: l2, longer: l1 + ' region' },
-            { shorter: l2, longer: l1 + ' province' },
-            { shorter: l2, longer: l1 + ' state' },
-            { shorter: l2, longer: l1 + ' prefecture' },
-            { shorter: l2, longer: l1 + ' district' }
-          ];
+          const adminSuffixes = ['region', 'province', 'state', 'prefecture', 'district', 'county'];
           
-          return adminPatterns.some(pattern => 
-            pattern.shorter === pattern.longer.replace(/\s+(region|province|state|prefecture|district)$/, '')
-          );
+          for (const suffix of adminSuffixes) {
+            if (l1 === l2.replace(new RegExp(`\\s+${suffix}$`), '') ||
+                l2 === l1.replace(new RegExp(`\\s+${suffix}$`), '')) {
+              return true;
+            }
+          }
+          
+          return false;
         }
         
         // Remove redundant components
