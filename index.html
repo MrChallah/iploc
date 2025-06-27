@@ -133,6 +133,29 @@
   tick(); setInterval(tick, 1000);
   
   async function reverseGeocode(lat, lon){
+    // Detect if we're running locally (file:// protocol) and prioritize Nominatim
+    const isLocalFile = window.location.protocol === 'file:';
+    
+    if (isLocalFile) {
+      console.log('Local file detected, using Nominatim as primary geocoder');
+      try {
+        return await reverseGeocodeWithNominatim(lat, lon);
+      } catch (nominatimError) {
+        console.warn('Nominatim failed, trying Google as fallback:', nominatimError);
+        return await reverseGeocodeWithGoogle(lat, lon);
+      }
+    }
+    
+    // Try Google first for hosted environments
+    try {
+      return await reverseGeocodeWithGoogle(lat, lon);
+    } catch (error) {
+      console.warn('Google geocoding failed, fallback to Nominatim:', error.message);
+      return await reverseGeocodeWithNominatim(lat, lon);
+    }
+  }
+  
+  async function reverseGeocodeWithGoogle(lat, lon) {
     try {
       // Use Google's reverse geocoding API for better English translations
       const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=locality|administrative_area_level_1|country`);
@@ -811,7 +834,7 @@
           console.log('Attempting to show wind waves...');
           
           // Load windy.svg icon
-          const repoBaseUrl = 'https://mrchallah.github.io/v4/';
+          const repoBaseUrl = 'https://raw.githubusercontent.com/MrChallah/MrChallah.github.io/main/v4/';
           const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
           
           // Clear any existing error handlers
