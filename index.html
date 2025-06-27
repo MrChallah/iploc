@@ -349,43 +349,110 @@
       // Check if Japan in Nominatim response
       window.isLocationInJapan = addr.country_code === 'jp' || addr.country === 'Japan' || addr.country === '日本';
       
-      // Smart city name selection - avoid administrative names
+      // Enhanced Nominatim city name selection with priority-based approach
       let city = '';
       let state = '';
       let country = addr.country || '';
       
-      // Prefer village/town over city if city contains administrative terms
+      // Collect all potential city names from Nominatim with priorities
+      let potentialCities = [];
+      
+      // Priority 1: Primary city designations
+      if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
+        potentialCities.push({ name: addr.city, priority: 1, type: 'city' });
+      }
+      if (addr.town && !addr.town.includes('Capital') && !addr.town.includes('City of')) {
+        potentialCities.push({ name: addr.town, priority: 1, type: 'town' });
+      }
       if (addr.village && !addr.village.includes('Capital') && !addr.village.includes('City of')) {
-        city = addr.village;
-      } else if (addr.town && !addr.town.includes('Capital') && !addr.town.includes('City of')) {
-        city = addr.town;
-      } else if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
-        city = addr.city;
-      } else if (addr.state && addr.state !== addr.city) {
-        // If city has administrative terms, use state as city if they're different
-        city = addr.state;
-        state = ''; // Don't duplicate
-      } else {
-        // Last resort - clean up the city name
-        city = (addr.city || addr.town || addr.village || '').replace(/^Capital City of /, '');
+        potentialCities.push({ name: addr.village, priority: 1, type: 'village' });
       }
       
-      // Only set state if it's different from city and doesn't contain administrative terms
-      if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
-        // Check for redundancy with Nominatim data too
+      // Priority 2: Administrative areas that often contain city names
+      if (addr.municipality && addr.municipality !== addr.city && addr.municipality !== addr.town) {
+        potentialCities.push({ name: addr.municipality, priority: 2, type: 'municipality' });
+      }
+      if (addr.county && addr.county !== addr.city && addr.county !== addr.town && !addr.county.includes('County')) {
+        potentialCities.push({ name: addr.county, priority: 2, type: 'county' });
+      }
+      
+      // Priority 3: Suburban/district areas
+      if (addr.suburb && addr.suburb !== addr.city && addr.suburb !== addr.town) {
+        potentialCities.push({ name: addr.suburb, priority: 3, type: 'suburb' });
+      }
+      if (addr.neighbourhood && addr.neighbourhood !== addr.city && addr.neighbourhood !== addr.town) {
+        potentialCities.push({ name: addr.neighbourhood, priority: 3, type: 'neighbourhood' });
+      }
+      
+      // Priority 4: State/region as last resort
+      if (addr.state && addr.state !== addr.city && addr.state !== addr.town) {
+        potentialCities.push({ name: addr.state, priority: 4, type: 'state_as_city' });
+      }
+      
+      console.log('Nominatim potential cities:', potentialCities);
+      
+      // Filter out overly detailed districts and administrative names
+      const filteredCities = potentialCities.filter(cityObj => {
+        const name = cityObj.name;
+        const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || 
+                                 name.includes('(') || name.includes(')') ||
+                                 name.includes('Ward') || name.includes('District') ||
+                                 name.includes('Capital') || name.includes('City of') ||
+                                 name.includes('County') || name.includes('Region');
+        return !isDetailedDistrict;
+      });
+      
+      // Choose the best city name
+      if (filteredCities.length > 0) {
+        // Sort by priority (lower number = higher priority)
+        filteredCities.sort((a, b) => a.priority - b.priority);
+        const bestCity = filteredCities[0];
+        city = bestCity.name;
+        console.log('Selected Nominatim city:', city, 'from type:', bestCity.type);
+        
+        // Don't use state as city if we found a real city
+        if (bestCity.type === 'state_as_city') {
+          state = ''; // Don't duplicate state
+        } else {
+          // Set state normally if we found a real city
+          if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
+            state = addr.state;
+          }
+        }
+      } else if (potentialCities.length > 0) {
+        // Use unfiltered if filtered list is empty
+        potentialCities.sort((a, b) => a.priority - b.priority);
+        const bestCity = potentialCities[0];
+        city = bestCity.name.replace(/^Capital City of /, '');
+        console.log('Selected Nominatim city (unfiltered):', city, 'from type:', bestCity.type);
+        
+        if (bestCity.type === 'state_as_city') {
+          state = '';
+        } else if (addr.state && addr.state !== city) {
+          state = addr.state;
+        }
+      }
+      
+      // Enhanced redundancy removal for Nominatim
+      if (city && state) {
         const cityLower = city.toLowerCase();
-        const stateLower = addr.state.toLowerCase();
+        const stateLower = state.toLowerCase();
         
         const isRedundant = cityLower === stateLower ||
                            cityLower.includes(stateLower) || 
                            stateLower.includes(cityLower) ||
-                           cityLower === stateLower.replace(/\s+(region|province|state|prefecture|district)$/, '') ||
-                           stateLower === cityLower.replace(/\s+(region|province|state|prefecture|district)$/, '');
+                           cityLower === stateLower.replace(/\s+(region|province|state|prefecture|district|county)$/, '') ||
+                           stateLower === cityLower.replace(/\s+(region|province|state|prefecture|district|county)$/, '');
         
-        if (!isRedundant) {
-          state = addr.state;
-        } else {
-          console.log('Detected Nominatim redundancy between city and state:', city, '/', addr.state);
+        if (isRedundant) {
+          console.log('Detected Nominatim redundancy between city and state:', city, '/', state);
+          // Prefer the shorter, more specific name
+          if (city.length <= state.length) {
+            state = ''; // Keep city, remove state
+          } else {
+            city = state; // Use state as city
+            state = '';
+          }
         }
       }
       
