@@ -1,13 +1,16 @@
 # GPS + IP GEO Location Dual Mode Overlay - for Kick/Twitch/YouTube/Rumble and More!
 
-## Six Versions Available
+# Credits
+Weather icons from [@mrdarrengriffin](https://github.com/mrdarrengriffin/google-weather-icons) - A collection of the official weather icons used by Google officially.
+
+## Four Versions Available
 
 ### 🌐 IP-Only Version (Most Compatible) - Best for OBS/Prism Live
 **URL:** `https://mrchallah.github.io/iploc`
 - **Best for:** PRISM Live, OBS, XSplit, and most streaming apps
 - **Accuracy:** Lower (IP-based location)
 - **Compatibility:** Universal - works in all environments
-- **Weather Icons:** Japanese regional v4 repository icons
+- **Weather Icons:** Japanese Google Weather Icons
 - **Use case:** When you need maximum compatibility across different streaming platforms like OBS and PRISM Live Studio
 
 ### 📍 GPS + IP Version (Most Accurate) - Best for IRL Pro
@@ -15,7 +18,7 @@
 - **Best for:** IRL Pro and GPS-capable environments
 - **Accuracy:** High (GPS + IP fallback)
 - **Compatibility:** Limited to GPS-friendly environments
-- **Weather Icons:** Japanese regional v4 repository icons
+- **Weather Icons:** Japanese Google Weather Icons
 - **Use case:** When you need precise location data and are using apps like IRL Pro
 
 ### 🎨 Font Awesome IP-Only Version (Alternative Style)
@@ -34,33 +37,15 @@
 - **Weather Icons:** Font Awesome icons with day/night variations
 - **Use case:** Alternative styling for IRL Pro and apps requiring GPS precision
 
-### ⚫⚪ Black & White IP-Only Version (Monochrome Style)
-**URL:** `https://mrchallah.github.io/bwiploc`
-- **Best for:** Monochrome overlays, minimalist streaming setups
-- **Accuracy:** Lower (IP-based location)
-- **Compatibility:** Universal - works in all environments
-- **Weather Icons:** High-contrast black & white Japanese regional v4 repository icons
-- **Use case:** Perfect for black & white themes, minimalist overlays, or high-contrast streaming setups
-
-### ⚫⚪📍 Black & White GPS + IP Version (Monochrome Style + Accuracy)
-**URL:** `https://mrchallah.github.io/bw`
-- **Best for:** Monochrome overlays with GPS precision
-- **Accuracy:** High (GPS + IP fallback)
-- **Compatibility:** Limited to GPS-friendly environments
-- **Weather Icons:** High-contrast black & white Japanese regional v4 repository icons
-- **Use case:** Monochrome styling for IRL Pro and apps requiring GPS precision
-
 ## Quick Setup
 
 ### For PRISM Live / OBS / Most Streaming Apps
-**Japanese Regional Icons:** `https://mrchallah.github.io/iploc`
+**Japanese Google Weather Icons:** `https://mrchallah.github.io/iploc`
 **Font Awesome Icons:** `https://mrchallah.github.io/classiciploc`
-**Black & White Monochrome:** `https://mrchallah.github.io/bwiploc`
 
 ### For IRL Pro / GPS-Capable Apps
-**Japanese Regional Icons:** `https://mrchallah.github.io/`
+**Japanese Google Weather Icons:** `https://mrchallah.github.io/`
 **Font Awesome Icons:** `https://mrchallah.github.io/classic`
-**Black & White Monochrome:** `https://mrchallah.github.io/bw`
 
 ## Features
 
@@ -84,7 +69,7 @@
 - **GPS Caching** - Remembers recent GPS data for reliability
 
 ### 🌤️ Enhanced Weather Information
-- **Two Icon Styles Available** - Choose between Japanese regional v4 icons or Font Awesome icons
+- **Two Icon Styles Available** - Choose between Japanese Google weather icons or Font Awesome icons
 - **Enhanced Weather Detection** - Uses multiple Open-Meteo parameters (wind speed, precipitation, visibility, temperature) for comprehensive condition analysis
 - **Complete Weather Coverage** - Supports all weather conditions including:
   - Wind conditions (windy, wind with rain, blizzards)
@@ -94,7 +79,7 @@
   - Special conditions (fog, dust, blowing snow)
 - **Smart Weather Logic** - Temperature-based descriptions (shows "Sunny" instead of "Clear" when temperature > 27°C)
 - **Day/Night Icon Variations** - Proper weather icons that change based on time of day
-- **Reliable Fallback System** - Japanese regional versions automatically fall back to Google Maps icons if v4 icons fail to load
+- **Reliable Fallback System** - Japanese Google weather icons automatically fall back to Google Maps icons if they fail to load
 - **Current temperature** in both Celsius and Fahrenheit
 - **Detailed weather descriptions** with accurate condition mapping
 - **Powered by Open Meteo API** (no API key required)
@@ -113,14 +98,14 @@
 
 ## Weather Icon Systems
 
-### 🎌 Japanese Regional Icons (Default)
+### 🎌 Japanese Google Weather Icons (Default)
 
-**Primary choice for most users** - Beautiful distinctive v4 repository weather icon designs
+**Primary choice for most users** - Beautiful distinctive Google Weather Icon designs
 
-- **Premium Visual Experience** - Distinctive v4 repository weather icon designs
+- **Premium Visual Experience** - Distinctive Google Weather Icon designs from official Google collection
 - **Enhanced Weather Detection** - Advanced condition analysis using wind speed, precipitation, visibility, and temperature
 - **Complete Weather Coverage** - Icons for all weather conditions including extreme weather, mixed precipitation, and severe storms
-- **Automatic Fallback** - Seamlessly falls back to Google Maps icons if v4 icons fail to load
+- **Automatic Fallback** - Seamlessly falls back to Google Maps icons if Google Weather Icons fail to load
 - **Day/Night Variations** - Proper time-of-day specific icons for enhanced accuracy
 
 ### 🎨 Font Awesome Icons (Alternative)
@@ -138,17 +123,6 @@
   - Fog: fa-eye-slash
 - **Heat & Wind Effects Preserved** - Still includes animated heat wave (fa-water) and wind (fa-wind) indicators
 - **No Fallback Needed** - Font Awesome icons load reliably from CDN
-
-### 🎨⚫⚪ Black & White Monochrome Icons (Minimalist)
-
-**Perfect for monochrome themes and high-contrast setups** - High-contrast black and white Japanese regional icons
-
-- **High-Contrast Design** - Uses advanced CSS filters to create crisp black and white icons from beautiful v4 repository designs
-- **Preserves Icon Detail** - Maintains all the visual details and shapes of the original Japanese regional icons
-- **True Black & White** - Advanced threshold filtering creates proper contrast between different icon elements
-- **Minimalist Aesthetic** - Perfect for black & white streaming themes, minimalist overlays, or high-contrast accessibility needs
-- **Same Feature Set** - Includes all advanced weather detection, heat waves, wind indicators, and day/night variations
-- **Automatic Fallback** - Still benefits from the reliable fallback system to Google Maps icons
 
 ### 🌍 Comprehensive Weather Conditions
 
@@ -214,28 +188,24 @@ Both icon systems detect and display icons for:
 ### Method 1: Browser Source (OBS/Streaming Software)
 1. Add a new "Browser Source"
 2. Choose your preferred version:
-   - **Japanese Regional + IP**: `https://mrchallah.github.io/iploc`
+   - **Japanese Google Weather Icons + IP**: `https://mrchallah.github.io/iploc`
    - **Font Awesome + IP**: `https://mrchallah.github.io/classiciploc`
-   - **Black & White + IP**: `https://mrchallah.github.io/bwiploc`
-   - **Japanese Regional + GPS**: `https://mrchallah.github.io/`
+   - **Japanese Google Weather Icons + GPS**: `https://mrchallah.github.io/`
    - **Font Awesome + GPS**: `https://mrchallah.github.io/classic`
-   - **Black & White + GPS**: `https://mrchallah.github.io/bw`
 3. Set width: 800, height: 600 (or as needed)
 4. Check "Shutdown source when not visible" for performance
 
 ### Method 2: PRISM Live Overlay
 1. Go to PRISM Live overlay settings
 2. Add web overlay with URL (choose IP-only version):
-   - **Japanese Regional**: `https://mrchallah.github.io/iploc`
+   - **Japanese Google Weather Icons**: `https://mrchallah.github.io/iploc`
    - **Font Awesome**: `https://mrchallah.github.io/classiciploc`
-   - **Black & White**: `https://mrchallah.github.io/bwiploc`
 3. Position as desired
 
 ### Method 3: IRL Pro Integration
 1. Choose GPS version:
-   - **Japanese Regional**: `https://mrchallah.github.io/`
+   - **Japanese Google Weather Icons**: `https://mrchallah.github.io/`
    - **Font Awesome**: `https://mrchallah.github.io/classic`
-   - **Black & White**: `https://mrchallah.github.io/bw`
 2. Allow location permissions when prompted
 3. IRL Pro's GPS data will be automatically detected and used
 
@@ -251,10 +221,10 @@ The IP-only versions automatically detect streaming app environments and optimiz
 - Falls back to multiple IP location services
 
 ### Enhanced Weather System
-- **Three Icon Style Options** - Choose between Japanese regional v4 icons, Font Awesome icons, or high-contrast black & white monochrome icons
+- **Two Icon Style Options** - Choose between Japanese Google Weather icons or Font Awesome icons
 - **Multi-Parameter Detection** - Uses wind speed, precipitation, visibility, and temperature for accurate condition analysis
 - **Comprehensive Coverage** - All Google Weather API condition types supported with appropriate icons
-- **Smart Fallback System** - Japanese regional and black & white versions have reliable icon loading with automatic fallback to Google Maps icons
+- **Smart Fallback System** - Japanese Google Weather icons versions have reliable icon loading with automatic fallback to Google Maps icons
 - **Advanced Weather Logic** - Temperature-aware descriptions and extreme weather detection
 
 ## API Dependencies
@@ -265,25 +235,23 @@ All versions use free services:
 - **Weather**: Enhanced Open Meteo API with multi-parameter detection (wind_speed_10m, precipitation, visibility, temperature_2m, weather_code, is_day)
 - **IP Location**: Multiple free services (Google, IP-API, IPInfo, IPAPI.co)
 - **Weather Icons**: 
-  - Japanese regional versions: Universal v4 repository icons with Google Maps fallback
+  - Japanese Google Weather Icon versions: Official Google Weather icons with default Google Map icons as fallback
   - Font Awesome versions: Font Awesome 6.5.0 from CDN
-  - Black & White versions: High-contrast filtered v4 repository icons with Google Maps fallback
 
 ## Styling & Customization
 
 ### Visual Design
 - Transparent background for overlay use
 - White text with black shadow for maximum visibility
-- Professional icon systems (Japanese regional or Font Awesome)
+- Professional icon systems (Japanese Google Weather or Font Awesome)
 - Responsive layout that works on any screen size
 - Enhanced weather icons with drop shadows for better visibility
 
 ### Icons Used
 - 🕒 Clock icon for time display
 - 📍 Location dot for place information  
-- 🎌 **Japanese Regional**: Dynamic v4 repository weather icons that change based on conditions, time of day, and weather parameters
+- 🎌 **Japanese Google Weather icons**: Dynamic Google Weather Icons that change based on conditions, time of day, and weather parameters
 - 🎨 **Font Awesome**: Standard Font Awesome weather icons (fa-sun, fa-cloud, fa-snowflake, etc.) with day/night variations
-- ⚫⚪ **Black & White**: High-contrast monochrome v4 repository weather icons with advanced CSS filtering for crisp black and white display
 
 ## Browser Compatibility
 
@@ -316,7 +284,7 @@ All versions use free services:
 1. **Internet connectivity**: Verify network access
 2. **Temporary service issue**: Weather API might be temporarily unavailable
 3. **Refresh page**: Try reloading the overlay
-4. **Icon fallback**: Japanese regional versions automatically fall back to Google Maps icons if needed
+4. **Icon fallback**: Japanese Google Weather icons automatically fall back to Google Maps icons if needed
 
 ### PRISM Live Issues
 1. **Use IP version**: Make sure you're using IP-only versions
@@ -325,23 +293,15 @@ All versions use free services:
 
 ## Recent Updates
 
-### New Black & White Monochrome Versions
-- **High-Contrast Monochrome Style** - Added black & white monochrome versions for minimalist and high-contrast streaming setups
-- **Advanced CSS Filtering** - Uses sophisticated grayscale and contrast filters to create crisp black and white weather icons
-- **Perfect for Themes** - Ideal for black & white overlays, minimalist streaming themes, or accessibility needs
-- **Complete Feature Parity** - Black & white versions include all advanced features (heat waves, wind detection, regional thresholds)
-- **Six Total Versions** - Now offering Japanese regional, Font Awesome, and black & white icon styles in both IP-only and GPS+IP variants
-- **Preserved Visual Quality** - Maintains all the detail and beauty of the original v4 repository icons in monochrome format
-
 ### Font Awesome Icon Versions
 - **Alternative Icon Style** - Added Font Awesome weather icon versions for users who prefer this style
 - **Complete Feature Parity** - Font Awesome versions include all advanced features (heat waves, wind detection, regional thresholds)
-- **Six Total Versions** - Now offering Japanese regional, Font Awesome, and black & white icon styles in both IP-only and GPS+IP variants
+- **Four Total Versions** - Now offering Japanese Google Weather icons and Font Awesome icon styles in both IP-only and GPS+IP variants
 - **Day/Night Icon Support** - Font Awesome versions include proper day/night icon variations
 - **Preserved Animations** - Heat wave and wind effect animations maintained in Font Awesome versions
 
 ### Major Weather System Features
-- **Universal Japanese Regional Icons** - Beautiful v4 repository weather icons as primary option
+- **Universal Japanese Google Weather Icons** - Beautiful Google Weather Icons as primary option
 - **Enhanced Weather Detection** - Multi-parameter analysis using wind speed, precipitation, visibility, and temperature
 - **Complete Weather Coverage** - Support for all weather conditions including extreme weather, mixed precipitation, and severe storms
 - **Smart Condition Logic** - Advanced weather condition detection beyond basic weather codes
@@ -363,17 +323,17 @@ All versions use free services:
 - Use IP versions for better stability during streams
 - Position overlay in a corner to avoid content interference
 - Test before going live to ensure proper functionality
-- Weather icons now load more reliably with improved fallback system (Japanese regional) or reliable CDN (Font Awesome)
+- Weather icons now load more reliably with improved fallback system (Japanese Google Weather icons) or reliable CDN (Font Awesome)
 
 ### For Mobile IRL Streaming
 - GPS versions work best with IRL Pro
 - IP versions recommended for other mobile streaming apps
 - Consider battery impact of GPS usage
-- All users can choose between Japanese regional, Font Awesome, or black & white monochrome weather icons
+- All users can choose between Japanese Google Weather or Font Awesome icons
 
 ## Version History & Updates
 
-The overlays are automatically updated on the GitHub Pages hosting, so you'll always get the latest version by using the URLs above. Recent major updates include the universal Japanese regional weather icon system, comprehensive multi-parameter weather detection, and new Font Awesome icon alternatives.
+The overlays are automatically updated on the GitHub Pages hosting, so you'll always get the latest version by using the URLs above. Recent major updates include the universal Japanese Google Weather Icon system, comprehensive multi-parameter weather detection, and Font Awesome icon alternatives.
 
 ## License
 
@@ -386,14 +346,12 @@ Feel free to submit issues, feature requests, or pull requests to improve the ov
 ---
 
 **Quick Reference:**
-- **Maximum Compatibility (Japanese)**: `https://mrchallah.github.io/iploc`
+- **Maximum Compatibility (Japanese Google Weather Icons)**: `https://mrchallah.github.io/iploc`
 - **Maximum Compatibility (Font Awesome)**: `https://mrchallah.github.io/classiciploc`
-- **Maximum Compatibility (Black & White)**: `https://mrchallah.github.io/bwiploc`
-- **Maximum Accuracy (Japanese)**: `https://mrchallah.github.io/`
+- **Maximum Accuracy (Japanese Google Weather Icons)**: `https://mrchallah.github.io/`
 - **Maximum Accuracy (Font Awesome)**: `https://mrchallah.github.io/classic`
-- **Maximum Accuracy (Black & White)**: `https://mrchallah.github.io/bw`
 - **PRISM Live**: Use IP versions
 - **IRL Pro**: Use GPS versions
-- **OBS/XSplit**: Use IP versions
-- **Weather Icons**: Choose between Japanese regional v4 icons, Font Awesome icons, or black & white monochrome icons
+- **OBS/XSplit**: Use IP versions  
+- **Weather Icons**: Choose between Japanese Google Weather icons or Font Awesome icons
 - **Weather Coverage**: Complete multi-parameter weather detection system 
