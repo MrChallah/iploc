@@ -349,7 +349,11 @@
                    p2.replace(/\s+(region|province|state|prefecture|district)$/, '') === p1;
           });
           
-          if (!isRedundant) {
+          // Filter out Israeli districts specifically
+          const isIsraeliDistrict = part.toLowerCase().includes('district') && 
+                                  broadParts.some(p => p.toLowerCase() === 'israel');
+          
+          if (!isRedundant && !isIsraeliDistrict) {
             filteredParts.push(part);
           }
         });
@@ -389,6 +393,20 @@
       }
       if (addr.village && !addr.village.includes('Capital') && !addr.village.includes('City of')) {
         potentialCities.push({ name: addr.village, priority: 1, type: 'village' });
+      }
+      
+      // Priority 1.5: Small settlements, hamlets, and localities (important for Israeli communities)
+      if (addr.hamlet) {
+        potentialCities.push({ name: addr.hamlet, priority: 1.5, type: 'hamlet' });
+      }
+      if (addr.locality && addr.locality !== addr.city && addr.locality !== addr.town) {
+        potentialCities.push({ name: addr.locality, priority: 1.5, type: 'locality' });
+      }
+      if (addr.quarter && addr.quarter !== addr.city && addr.quarter !== addr.town) {
+        potentialCities.push({ name: addr.quarter, priority: 1.5, type: 'quarter' });
+      }
+      if (addr.residential && addr.residential !== addr.city && addr.residential !== addr.town) {
+        potentialCities.push({ name: addr.residential, priority: 1.5, type: 'residential' });
       }
       
       // Priority 2: Administrative areas that often contain city names
@@ -477,6 +495,11 @@
             state = '';
           }
         }
+      }
+      
+      // Filter out Israeli districts before assembling final location
+      if (country === 'Israel' && state && state.toLowerCase().includes('district')) {
+        state = '';
       }
       
       const parts = [city, state, country].filter(Boolean);
