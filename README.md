@@ -1,7 +1,7 @@
 # GPS + IP GEO Location Dual Mode Overlay - for Kick/Twitch/YouTube/Rumble and More!
 
 # Credits
-Weather icons from [@mrdarrengriffin](https://github.com/mrdarrengriffin/google-weather-icons) - A collection of the official weather icons used by Google officially.
+Weather icons from [@mrdarrengriffin](https://github.com/mrdarrengriffin/google-weather-icons) - A collection of the official weather icons used by Google.
 
 ## Four Versions Available
 
