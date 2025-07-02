@@ -1480,18 +1480,40 @@
         const now = Date.now();
         const locationAge = now - (lastKnownLocation.timestamp || 0);
         
-        // Use cached location if it's recent (within 10 minutes) or if all methods failed
-        if (locationAge < 600000) { // 10 minutes instead of 5
+        // Use shorter cache time if GPS is working well (more responsive to location changes)
+        const maxCacheAge = gpsSuccessful ? 300000 : 600000; // 5 minutes if GPS works, 10 minutes otherwise
+        
+        // Use cached location if it's recent
+        if (locationAge < maxCacheAge) {
           locationData = lastKnownLocation;
-          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes)');
+          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes, GPS successful:', gpsSuccessful, ')');
+        } else {
+          console.log('Cached location expired (age:', Math.round(locationAge/60000), 'minutes, max:', Math.round(maxCacheAge/60000), 'minutes)');
         }
       }
       
       // Update the display
       if (locationData) {
+        // Check if this is a significantly different location (more than ~1km away)
+        let isSignificantMove = false;
+        if (lastKnownLocation && lastKnownLocation.lat && lastKnownLocation.lon) {
+          const latDiff = Math.abs(locationData.lat - lastKnownLocation.lat);
+          const lonDiff = Math.abs(locationData.lon - lastKnownLocation.lon);
+          const approximateDistance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff) * 111000; // Rough conversion to meters
+          
+          if (approximateDistance > 1000) { // More than 1km
+            isSignificantMove = true;
+            console.log('🚗 Significant location change detected! Distance:', Math.round(approximateDistance), 'meters');
+            
+            // Clear location name cache when we detect a significant move
+            lastLocationName = null;
+            lastLocationTimestamp = 0;
+          }
+        }
+        
         lastKnownLocation = locationData;
         lastKnownLocation.timestamp = Date.now();
-        if (showLoadingMessages) {
+        if (showLoadingMessages || isSignificantMove) {
           placeEl.textContent = "Loading location...";
         }
         
@@ -1503,17 +1525,17 @@
           lastLocationName = label;
           lastLocationTimestamp = Date.now();
           
-          console.log('Location updated:', locationData.source, label);
+          console.log('Location updated:', locationData.source, label, isSignificantMove ? '(significant move detected)' : '');
         } catch (geocodeError) {
           console.error('Geocoding failed:', geocodeError);
           
-          // Use cached location name if available
-          if (lastLocationName) {
+          // Use cached location name if available, but show a warning for significant moves
+          if (lastLocationName && !isSignificantMove) {
             console.log('Using cached location name due to geocoding failure');
             placeEl.textContent = lastLocationName;
           } else {
-            // Only show "Location N/A" if no cached name is available
-            placeEl.textContent = "Location N/A";
+            // For significant moves or no cache, show loading state
+            placeEl.textContent = isSignificantMove ? "🚗 Getting new location..." : "Location N/A";
           }
         }
         
@@ -1584,6 +1606,101 @@
       updateLocationAndWeather(false);
     }
   }, 15000); // Check every 15 seconds during issues
+  
+  // Function to clear all location caches and force refresh
+  function clearLocationCache() {
+    console.log('🔄 Clearing all location caches...');
+    
+    // Clear all cached location data
+    lastKnownLocation = null;
+    lastLocationName = null;
+    lastLocationTimestamp = 0;
+    lastWeatherData = null;
+    lastWeatherTimestamp = 0;
+    
+    // Reset GPS state to allow fresh attempts
+    gpsSuccessful = false;
+    gpsAttempted = false;
+    consecutiveGPSFailures = 0;
+    
+    // Reset connection retry state
+    retryAttempts = 0;
+    hasConnectionIssues = false;
+    
+    // Clear any pending timeouts
+    retryTimeouts.forEach(clearTimeout);
+    retryTimeouts = [];
+    
+    console.log('✅ All caches cleared! Forcing fresh location update...');
+    
+    // Force immediate location update with loading messages
+    placeEl.textContent = "🔄 Refreshing location...";
+    weatherEl.textContent = "Loading...";
+    
+    // Small delay to show the refreshing message
+    setTimeout(() => {
+      updateLocationAndWeather(true);
+    }, 100);
+  }
+
+  // Function to force location refresh (less aggressive than clearing cache)
+  function forceLocationRefresh() {
+    console.log('🔄 Forcing location refresh...');
+    
+    // Expire current location cache to force new lookup
+    if (lastKnownLocation) {
+      lastKnownLocation.timestamp = Date.now() - 700000; // Make it older than 10 minutes
+    }
+    
+    // Reset GPS state to allow fresh attempts
+    gpsAttempted = false;
+    consecutiveGPSFailures = 0;
+    
+    placeEl.textContent = "🔄 Updating location...";
+    updateLocationAndWeather(true);
+  }
+
+  // Keyboard shortcuts for manual refresh
+  document.addEventListener('keydown', function(event) {
+    // Ctrl+R or F5 = Force location refresh
+    if ((event.ctrlKey && event.key === 'r') || event.key === 'F5') {
+      event.preventDefault();
+      console.log('🔄 Manual location refresh triggered by keyboard shortcut');
+      forceLocationRefresh();
+      return false;
+    }
+    
+    // Ctrl+Shift+R = Clear all caches and refresh
+    if (event.ctrlKey && event.shiftKey && event.key === 'R') {
+      event.preventDefault();
+      console.log('🔄 Manual cache clear triggered by keyboard shortcut');
+      clearLocationCache();
+      return false;
+    }
+  });
+
+  // Double-click on location text to force refresh
+  placeEl.addEventListener('dblclick', function() {
+    console.log('🔄 Manual location refresh triggered by double-click');
+    forceLocationRefresh();
+  });
+
+  // Make functions available globally
+  window.clearLocationCache = clearLocationCache;
+  window.forceLocationRefresh = forceLocationRefresh;
+  
+  // Add visual feedback that double-click is available
+  placeEl.title = "Double-click to refresh location • Ctrl+R to force refresh • Ctrl+Shift+R to clear cache";
+  placeEl.style.cursor = "pointer";
+  
+  // Add subtle hover effect to show it's interactive
+  placeEl.addEventListener('mouseenter', function() {
+    this.style.opacity = '0.8';
+  });
+  
+  placeEl.addEventListener('mouseleave', function() {
+    this.style.opacity = '1';
+  });
   
   // Debug function to detect available location interfaces
   function debugLocationInterfaces() {
