@@ -171,8 +171,11 @@
   // Enhanced fetch with retry logic
   async function fetchWithRetry(url, options = {}, retryCount = 0) {
     try {
+      // Create fresh AbortController for each attempt
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 5000); // Reduced to 5 seconds for better responsiveness
       
       const response = await fetch(url, {
         ...options,
@@ -191,19 +194,30 @@
       
       return response;
     } catch (error) {
+      clearTimeout(timeoutId); // Ensure timeout is cleared on error too
       console.warn(`Fetch attempt ${retryCount + 1} failed:`, error.message);
       
-      if (retryCount < maxRetryAttempts && (error.name === 'AbortError' || error.name === 'TypeError' || !navigator.onLine)) {
+      // Better error categorization
+      const isTimeoutError = error.name === 'AbortError';
+      const isNetworkError = error.name === 'TypeError' || error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION');
+      const isOffline = !navigator.onLine;
+      
+      if (retryCount < maxRetryAttempts && (isTimeoutError || isNetworkError || isOffline)) {
         hasConnectionIssues = true;
-        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10 seconds
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 8000); // Exponential backoff, max 8 seconds
         console.log(`Retrying in ${delay}ms...`);
         
-        await new Promise(resolve => {
-          const timeoutId = setTimeout(resolve, delay);
+        return new Promise(resolve => {
+          const timeoutId = setTimeout(async () => {
+            try {
+              const result = await fetchWithRetry(url, options, retryCount + 1);
+              resolve(result);
+            } catch (err) {
+              resolve(Promise.reject(err));
+            }
+          }, delay);
           retryTimeouts.push(timeoutId);
         });
-        
-        return fetchWithRetry(url, options, retryCount + 1);
       }
       
       throw error;
