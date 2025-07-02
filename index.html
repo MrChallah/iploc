@@ -170,10 +170,11 @@
   
   // Enhanced fetch with retry logic
   async function fetchWithRetry(url, options = {}, retryCount = 0) {
+    let timeoutId; // Move declaration to function scope
     try {
       // Create fresh AbortController for each attempt
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         controller.abort();
       }, 5000); // Reduced to 5 seconds for better responsiveness
       
