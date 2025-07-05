@@ -1029,39 +1029,53 @@
         imgElement.src = iconUrls.primary;
         imgElement.onerror = function() { this.src = iconUrls.fallback; };
         
-        // Update icon
-        weatherIcon.innerHTML = '';
-        weatherIcon.appendChild(imgElement);
-        
-        // Update secondary effects with cached data
-        const heatWaves = document.getElementById('heat-waves');
-        const windWaves = document.getElementById('wind-waves');
-        
-        if (heatWaves) {
-          heatWaves.style.display = cached.isHot ? 'inline-block' : 'none';
-          if (cached.isHot && cached.isWindy) {
-            heatWaves.classList.add('with-wind');
-          } else {
-            heatWaves.classList.remove('with-wind');
+        // Use proper element restoration for cached data
+        imgElement.onload = function() {
+          // Preserve secondary effects before clearing
+          const heatWaves = weatherIcon.querySelector('#heat-waves');
+          const windWaves = weatherIcon.querySelector('#wind-waves');
+          
+          // Update icon
+          weatherIcon.innerHTML = '';
+          weatherIcon.appendChild(imgElement);
+          
+          // Re-add preserved secondary effects
+          if (heatWaves) {
+            weatherIcon.appendChild(heatWaves);
           }
-        }
+          if (windWaves) {
+            weatherIcon.appendChild(windWaves);
+          }
+          
+          // Update secondary effects with cached data after elements are restored
+          const restoredHeatWaves = document.getElementById('heat-waves');
+          const restoredWindWaves = document.getElementById('wind-waves');
         
-        if (windWaves) {
-          windWaves.style.display = cached.isWindy ? 'inline-block' : 'none';
-          if (cached.isWindy) {
-            if (cached.isHot) {
-              windWaves.classList.remove('only-wind');
+          if (restoredHeatWaves) {
+            restoredHeatWaves.style.display = cached.isHot ? 'inline-block' : 'none';
+            if (cached.isHot && cached.isWindy) {
+              restoredHeatWaves.classList.add('with-wind');
             } else {
-              windWaves.classList.add('only-wind');
+              restoredHeatWaves.classList.remove('with-wind');
             }
-          } else {
-            windWaves.classList.remove('only-wind');
           }
-        }
         
-        // Re-add secondary effects to icon
-        if (heatWaves) weatherIcon.appendChild(heatWaves);
-        if (windWaves) weatherIcon.appendChild(windWaves);
+          if (restoredWindWaves) {
+            restoredWindWaves.style.display = cached.isWindy ? 'inline-block' : 'none';
+            if (cached.isWindy) {
+              if (cached.isHot) {
+                restoredWindWaves.classList.remove('only-wind');
+              } else {
+                restoredWindWaves.classList.add('only-wind');
+              }
+            } else {
+              restoredWindWaves.classList.remove('only-wind');
+            }
+          }
+        };
+        
+        // Add the image element to DOM
+        weatherIcon.appendChild(imgElement);
       } else {
         // Only show "Weather N/A" if no cached data is available at all
         weatherEl.textContent = "Weather N/A";
@@ -1704,44 +1718,6 @@
   placeEl.addEventListener('mouseleave', function() {
     this.style.opacity = '1';
   });
-  
-  // Debug function to detect available location interfaces
-  function debugLocationInterfaces() {
-    console.log('=== LOCATION INTERFACE DEBUG ===');
-    console.log('User Agent:', navigator.userAgent);
-    console.log('Location href:', window.location.href);
-    console.log('Location protocol:', window.location.protocol);
-    console.log('Location hostname:', window.location.hostname);
-    console.log('Window chrome:', !!window.chrome);
-    console.log('Outer width:', window.outerWidth, 'Inner width:', window.innerWidth);
-    console.log('IRL Pro locationData:', !!window.locationData);
-    console.log('PRISM prismLocationData:', !!window.prismLocationData);
-    console.log('PRISM window.prism:', !!window.prism);
-    console.log('PRISM window.PRISM_GPS:', !!window.PRISM_GPS);
-    console.log('WebKit messageHandlers:', !!(window.webkit && window.webkit.messageHandlers));
-    console.log('Android interface:', !!window.Android);
-    console.log('Navigator geolocation:', !!navigator.geolocation);
-    console.log('Is in app environment:', isInApp);
-    
-    // Log all window properties that might be related to location
-    const locationRelatedProps = [];
-    for (let prop in window) {
-      if (prop.toLowerCase().includes('location') || 
-          prop.toLowerCase().includes('gps') || 
-          prop.toLowerCase().includes('geo') ||
-          prop.toLowerCase().includes('prism') ||
-          prop.toLowerCase().includes('position')) {
-        locationRelatedProps.push(prop + ': ' + typeof window[prop]);
-      }
-    }
-    if (locationRelatedProps.length > 0) {
-      console.log('Location-related window properties:', locationRelatedProps);
-    }
-    console.log('=== END DEBUG ===');
-  }
-  
-  // Run debug on load
-  setTimeout(debugLocationInterfaces, 1000);
   
   // Start immediately (with loading messages)
   updateLocationAndWeather(true);
