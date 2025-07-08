@@ -226,172 +226,196 @@
   }
   
   async function reverseGeocodeWithGoogle(lat, lon) {
-    const res = await fetchWithRetry(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=locality|administrative_area_level_1|country`);
+    const res = await fetchWithRetry(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=locality|administrative_area_level_2|administrative_area_level_1|country`);
       const data = await res.json();
       
       if (data.status === 'OK' && data.results.length > 0) {
-        const result = data.results[0];
-        const components = result.address_components;
-        
-        // Extract components in preferred order
-        let city = '';
-        let state = '';
+        // Collect all components from all results to make a consistent decision
+        let allCities = [];
+        let allStates = [];
         let country = '';
         let isJapan = false;
         
-        // First pass: collect all potential city names
-        let potentialCities = [];
+        // Process all results to gather comprehensive location data
+        for (let resultIndex = 0; resultIndex < Math.min(data.results.length, 3); resultIndex++) {
+          const result = data.results[resultIndex];
+          const components = result.address_components;
         
         components.forEach(component => {
           const types = component.types;
           const name = component.long_name;
-          
-          // Debug logging
-          console.log('Component:', name, 'Types:', types);
           
           // Check if location is in Japan
           if (types.includes('country') && (component.short_name === 'JP' || name === 'Japan')) {
             isJapan = true;
           }
           
-          // Collect potential city names
+            // Collect potential city names with improved priority for specific locations
           if (types.includes('locality')) {
-            potentialCities.push({ name, priority: 1, type: 'locality' });
-          } else if (types.includes('administrative_area_level_2')) {
-            potentialCities.push({ name, priority: 2, type: 'admin_level_2' });
-          } else if (types.includes('sublocality_level_1')) {
-            potentialCities.push({ name, priority: 3, type: 'sublocality' });
+              // Highest priority: actual localities (specific places like Punta Cana)
+              allCities.push({ name, priority: 1, type: 'locality', source: `result_${resultIndex}` });
+            } else if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+              // Second priority: specific sub-areas within cities
+              allCities.push({ name, priority: 2, type: 'sublocality', source: `result_${resultIndex}` });
+            } else if (types.includes('administrative_area_level_2') && !name.includes('County') && !name.includes('District') && !name.includes('Region')) {
+              // Third priority: administrative areas that are actual cities/towns (not just administrative regions)
+              allCities.push({ name, priority: 3, type: 'admin_level_2', source: `result_${resultIndex}` });
+            } else if (types.includes('administrative_area_level_3')) {
+              // Fourth priority: more specific administrative areas
+              allCities.push({ name, priority: 4, type: 'admin_level_3', source: `result_${resultIndex}` });
           }
           
-          // Set state and country
+            // Collect state/region names
           if (types.includes('administrative_area_level_1')) {
-            console.log('Setting state to:', name);
-            state = name;
-          } else if (types.includes('country')) {
-            console.log('Setting country to:', name);
+              allStates.push({ name, source: `result_${resultIndex}` });
+            }
+            
+            // Set country (take first one found)
+            if (types.includes('country') && !country) {
             country = name;
           }
         });
-        
-        // Choose the best city name
-        if (potentialCities.length > 0) {
-          // Sort by priority (lower number = higher priority)
-          potentialCities.sort((a, b) => a.priority - b.priority);
-          
-          // Filter out overly detailed districts
-          const filteredCities = potentialCities.filter(cityObj => {
-            const name = cityObj.name;
-            const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || 
-                                     name.includes('(') || name.includes(')') ||
-                                     name.includes('Ward') || name.includes('District');
-            return !isDetailedDistrict;
-          });
-          
-          // Use the best available city name
-          const bestCity = filteredCities.length > 0 ? filteredCities[0] : potentialCities[0];
-          city = bestCity.name;
-          console.log('Selected city:', city, 'from type:', bestCity.type);
         }
+        
+        console.log('All collected cities:', allCities);
+        console.log('All collected states:', allStates);
         
         // Store Japan status globally for weather icon selection
         window.isLocationInJapan = isJapan;
         
-        // If still no city, try administrative areas as backup
-        if (!city) {
-          components.forEach(component => {
-            const types = component.types;
-            const name = component.long_name;
-            
-            if (types.includes('administrative_area_level_2') && name !== state) {
-              city = name;
-              console.log('Using admin_level_2 as city:', city);
-            }
-          });
-        }
+        // Deduplicate cities while preserving the most specific ones
+        const uniqueCities = [];
+        allCities.forEach(cityObj => {
+          const isDuplicate = uniqueCities.some(existing => 
+            existing.name.toLowerCase() === cityObj.name.toLowerCase()
+          );
+          if (!isDuplicate) {
+            uniqueCities.push(cityObj);
+          }
+        });
         
-        // Improved redundancy removal
-        function areLocationsSimilar(loc1, loc2) {
-          if (!loc1 || !loc2) return false;
+        // Filter out overly generic or administrative names that aren't specific locations
+        const filteredCities = uniqueCities.filter(cityObj => {
+          const name = cityObj.name;
+          const isGenericAdmin = name.includes('County') || name.includes('District') || 
+                                name.includes('Region') || name.includes('Prefecture') ||
+                                name.includes('Municipality') || name.includes('Province') ||
+                                name.includes('-dong') || name.includes('dong,') || 
+                                name.includes('(') || name.includes(')') ||
+                                name.includes('Ward');
+          return !isGenericAdmin;
+        });
+        
+        // Sort by priority (lower number = higher priority) to get the most specific location
+        const citiesToConsider = filteredCities.length > 0 ? filteredCities : uniqueCities;
+        citiesToConsider.sort((a, b) => a.priority - b.priority);
           
-          const l1 = loc1.toLowerCase().trim();
-          const l2 = loc2.toLowerCase().trim();
+        // Get the best state (most common one)
+        const stateNames = allStates.map(s => s.name);
+        const mostCommonState = stateNames.length > 0 ? stateNames[0] : '';
+        
+        // Select final city and state with consistent redundancy rules
+        let finalCity = '';
+        let finalState = '';
+        
+        if (citiesToConsider.length > 0) {
+          const bestCityObj = citiesToConsider[0];
+          finalCity = bestCityObj.name;
           
-          // Exact match
-          if (l1 === l2) return true;
+          console.log('Selected most specific city:', finalCity, 'from type:', bestCityObj.type, 'priority:', bestCityObj.priority);
           
-          // Only check substring matches if the strings are very similar in length
-          // and one is a clear subset with meaningful overlap (not just coincidental letters)
-          if (Math.abs(l1.length - l2.length) <= 3) {
-            // Check if one completely contains the other with significant overlap
-            if ((l1.includes(l2) && l2.length >= 4) || (l2.includes(l1) && l1.length >= 4)) {
-              // Additional check: make sure they're not just common words that happen to overlap
-              // Avoid false positives like "San Francisco" vs "California"
-              const commonWords = ['san', 'los', 'las', 'new', 'saint', 'st', 'mount', 'fort'];
-              const l1Words = l1.split(/\s+/);
-              const l2Words = l2.split(/\s+/);
+          // Apply consistent state inclusion rules
+          if (mostCommonState) {
+            // Always exclude state if it's exactly the same as city (case insensitive)
+            if (finalCity.toLowerCase() === mostCommonState.toLowerCase()) {
+              finalState = '';
+              console.log('Excluding state because it matches city exactly:', finalCity, '==', mostCommonState);
+            }
+            // For Israel specifically, always exclude "Central District", "Northern District", etc. 
+            // when we have a proper city name, as these are administrative regions
+            else if (country === 'Israel' && mostCommonState.toLowerCase().includes('district')) {
+              finalState = '';
+              console.log('Excluding Israeli district for consistency:', mostCommonState);
+            }
+            // For other locations, include state if it adds meaningful information
+            else {
+              // Check if state is a generic administrative name that doesn't add value
+              const genericStateTerms = ['region', 'province', 'territory', 'district', 'area'];
+              const isGenericState = genericStateTerms.some(term => 
+                mostCommonState.toLowerCase().includes(term)
+              );
               
-              // If they share only common words, don't consider them similar
-              const sharedWords = l1Words.filter(word => l2Words.includes(word));
-              const significantSharedWords = sharedWords.filter(word => !commonWords.includes(word) && word.length > 2);
-              
-              // Only consider similar if there are significant shared words
-              if (significantSharedWords.length > 0) {
-                return true;
+              // Include state if it's not generic and provides useful geographic context
+              if (!isGenericState) {
+                finalState = mostCommonState;
+                console.log('Including state for geographic context:', mostCommonState);
+              } else {
+                finalState = '';
+                console.log('Excluding generic state for specificity:', mostCommonState);
+              }
               }
             }
           }
           
-          // Check for common administrative redundancy patterns
-          const adminSuffixes = ['region', 'province', 'state', 'prefecture', 'district', 'county'];
-          
-          for (const suffix of adminSuffixes) {
-            if (l1 === l2.replace(new RegExp(`\\s+${suffix}$`), '') ||
-                l2 === l1.replace(new RegExp(`\\s+${suffix}$`), '')) {
-              return true;
-            }
-          }
-          
-          return false;
+        // If still no city, try administrative areas as backup
+        if (!finalCity && mostCommonState) {
+          finalCity = mostCommonState;
+          finalState = '';
+          console.log('Using state as city (backup):', finalCity);
         }
         
-        // Remove redundant components (be more conservative)
-        if (city && state && areLocationsSimilar(city, state)) {
-          console.log('Detected redundant city/state:', city, '/', state);
+        // Filter out Israeli districts before assembling final location
+        if (country === 'Israel' && finalState && finalState.toLowerCase().includes('district')) {
+          finalState = '';
+        }
+        
+        // Additional redundancy check for city-states (Singapore, Monaco, Vatican, etc.)
+        if (finalCity && country) {
+          const cityLower = finalCity.toLowerCase();
+          const countryLower = country.toLowerCase();
           
-          // Prefer actual city names over administrative areas
-          const cityIsMoreSpecific = city.length < state.length || 
-                                   !state.toLowerCase().includes('region') && 
-                                   !state.toLowerCase().includes('province') &&
-                                   !state.toLowerCase().includes('state');
+          // Special handling for city-states where city equals country
+          if (cityLower === countryLower) {
+            console.log('Detected city-state redundancy:', finalCity, '==', country);
           
-          if (cityIsMoreSpecific) {
-            state = ''; // Keep city, remove state
-            console.log('Keeping city:', city, 'removing redundant state');
+            // For city-states like Singapore, check if we have a more specific area/neighborhood
+            // Look for the most specific location that isn't the country name
+            const specificAreas = citiesToConsider.filter(cityObj => 
+              cityObj.name.toLowerCase() !== countryLower && 
+              cityObj.priority <= 4 // Only consider specific areas, not generic administrative regions
+            );
+          
+            if (specificAreas.length > 0) {
+              // Sort by priority to get the most specific area
+              specificAreas.sort((a, b) => a.priority - b.priority);
+              const specificArea = specificAreas[0];
+              
+              console.log('Found specific area within city-state:', specificArea.name, 'type:', specificArea.type);
+              finalCity = specificArea.name;
+              // Keep country for context (e.g., "Tampines, Singapore")
+              finalState = ''; // Clear state to avoid triple names
           } else {
-            // Only replace city with state if city seems like an administrative area
-            if (city.toLowerCase().includes('region') || 
-                city.toLowerCase().includes('province') ||
-                city.toLowerCase().includes('state')) {
-              city = state;
-              state = '';
-              console.log('Replacing administrative city with state:', city);
+              // No specific area found, show just the city-state name
+              country = '';
             }
           }
         }
         
-        // Build address string, prioritizing the most specific location
-        const parts = [
-          city,
-          state,
-          country
-        ].filter(Boolean);
+        // Build final address string
+        const parts = [finalCity, finalState, country].filter(Boolean);
         
-        console.log('Final location parts:', parts);
+        console.log('Google final location parts (most specific):', parts);
         return parts.join(", ");
       }
       
+      // Check for API quota/permission issues
+      if (data.status === 'REQUEST_DENIED' || data.status === 'OVER_QUERY_LIMIT') {
+        console.warn('Google Geocoding API access issue:', data.status, data.error_message);
+        throw new Error(`Google API ${data.status}: ${data.error_message || 'Access denied or quota exceeded'}`);
+      }
+      
       // Safer fallback - extract only city, state, country from formatted address
-      if (data.results.length > 0) {
+      if (data.results && data.results.length > 0) {
         const formattedAddr = data.results[0].formatted_address;
         const addressParts = formattedAddr.split(', ');
         
@@ -426,6 +450,18 @@
           }
         });
         
+        // Additional check for city-states in formatted address fallback
+        if (filteredParts.length > 1) {
+          const lastPart = filteredParts[filteredParts.length - 1];
+          const secondLastPart = filteredParts[filteredParts.length - 2];
+          
+          // If last two parts are identical (city-state case), remove the duplicate
+          if (lastPart.toLowerCase() === secondLastPart.toLowerCase()) {
+            console.log('Detected city-state redundancy in formatted address:', secondLastPart, '==', lastPart);
+            filteredParts.pop(); // Remove the duplicate
+          }
+        }
+        
         return filteredParts.join(", ");
       }
       
@@ -442,15 +478,15 @@
       // Check if Japan in Nominatim response
       window.isLocationInJapan = addr.country_code === 'jp' || addr.country === 'Japan' || addr.country === '日本';
       
-      // Enhanced Nominatim city name selection with priority-based approach
+      // Enhanced Nominatim city name selection prioritizing specific locations
       let city = '';
       let state = '';
       let country = addr.country || '';
       
-      // Collect all potential city names from Nominatim with priorities
+      // Collect all potential city names from Nominatim with updated priorities for specificity
       let potentialCities = [];
       
-      // Priority 1: Primary city designations
+      // Priority 1: Most specific location designations (actual places)
       if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
         potentialCities.push({ name: addr.city, priority: 1, type: 'city' });
       }
@@ -461,39 +497,41 @@
         potentialCities.push({ name: addr.village, priority: 1, type: 'village' });
       }
       
-      // Priority 1.5: Small settlements, hamlets, and localities (important for Israeli communities)
+      // Priority 2: Specific settlements and localities (like resort areas, specific neighborhoods)
       if (addr.hamlet) {
-        potentialCities.push({ name: addr.hamlet, priority: 1.5, type: 'hamlet' });
+        potentialCities.push({ name: addr.hamlet, priority: 2, type: 'hamlet' });
       }
       if (addr.locality && addr.locality !== addr.city && addr.locality !== addr.town) {
-        potentialCities.push({ name: addr.locality, priority: 1.5, type: 'locality' });
+        potentialCities.push({ name: addr.locality, priority: 2, type: 'locality' });
       }
       if (addr.quarter && addr.quarter !== addr.city && addr.quarter !== addr.town) {
-        potentialCities.push({ name: addr.quarter, priority: 1.5, type: 'quarter' });
+        potentialCities.push({ name: addr.quarter, priority: 2, type: 'quarter' });
       }
       if (addr.residential && addr.residential !== addr.city && addr.residential !== addr.town) {
-        potentialCities.push({ name: addr.residential, priority: 1.5, type: 'residential' });
+        potentialCities.push({ name: addr.residential, priority: 2, type: 'residential' });
       }
       
-      // Priority 2: Administrative areas that often contain city names
+      // Priority 3: Municipality names (often the actual city name)
       if (addr.municipality && addr.municipality !== addr.city && addr.municipality !== addr.town) {
-        potentialCities.push({ name: addr.municipality, priority: 2, type: 'municipality' });
-      }
-      if (addr.county && addr.county !== addr.city && addr.county !== addr.town && !addr.county.includes('County')) {
-        potentialCities.push({ name: addr.county, priority: 2, type: 'county' });
+        potentialCities.push({ name: addr.municipality, priority: 3, type: 'municipality' });
       }
       
-      // Priority 3: Suburban/district areas
+      // Priority 4: Suburban/district areas (more specific than administrative regions)
       if (addr.suburb && addr.suburb !== addr.city && addr.suburb !== addr.town) {
-        potentialCities.push({ name: addr.suburb, priority: 3, type: 'suburb' });
+        potentialCities.push({ name: addr.suburb, priority: 4, type: 'suburb' });
       }
       if (addr.neighbourhood && addr.neighbourhood !== addr.city && addr.neighbourhood !== addr.town) {
-        potentialCities.push({ name: addr.neighbourhood, priority: 3, type: 'neighbourhood' });
+        potentialCities.push({ name: addr.neighbourhood, priority: 4, type: 'neighbourhood' });
       }
       
-      // Priority 4: State/region as last resort
+      // Priority 5: County as city name (only if it's not just "County")
+      if (addr.county && addr.county !== addr.city && addr.county !== addr.town && !addr.county.includes('County')) {
+        potentialCities.push({ name: addr.county, priority: 5, type: 'county' });
+      }
+      
+      // Priority 6: State/region as last resort (least specific)
       if (addr.state && addr.state !== addr.city && addr.state !== addr.town) {
-        potentialCities.push({ name: addr.state, priority: 4, type: 'state_as_city' });
+        potentialCities.push({ name: addr.state, priority: 6, type: 'state_as_city' });
       }
       
       console.log('Nominatim potential cities:', potentialCities);
@@ -509,13 +547,13 @@
         return !isDetailedDistrict;
       });
       
-      // Choose the best city name
+      // Choose the most specific city name (lowest priority number = most specific)
       if (filteredCities.length > 0) {
-        // Sort by priority (lower number = higher priority)
+        // Sort by priority (lower number = higher priority = more specific)
         filteredCities.sort((a, b) => a.priority - b.priority);
         const bestCity = filteredCities[0];
         city = bestCity.name;
-        console.log('Selected Nominatim city:', city, 'from type:', bestCity.type);
+        console.log('Selected most specific Nominatim city:', city, 'from type:', bestCity.type, 'priority:', bestCity.priority);
         
         // Don't use state as city if we found a real city
         if (bestCity.type === 'state_as_city') {
@@ -563,13 +601,45 @@
         }
       }
       
+      // Additional redundancy check for city-states (Singapore, Monaco, Vatican, etc.)
+      if (city && country) {
+        const cityLower = city.toLowerCase();
+        const countryLower = country.toLowerCase();
+        
+        // Special handling for city-states where city equals country
+        if (cityLower === countryLower) {
+          console.log('Detected city-state redundancy:', city, '==', country);
+          
+          // For city-states like Singapore, check if we have a more specific area/neighborhood
+          // Look for the most specific location that isn't the country name
+          const specificAreas = potentialCities.filter(cityObj => 
+            cityObj.name.toLowerCase() !== countryLower && 
+            cityObj.priority <= 4 // Only consider specific areas, not generic administrative regions
+          );
+          
+          if (specificAreas.length > 0) {
+            // Sort by priority to get the most specific area
+            specificAreas.sort((a, b) => a.priority - b.priority);
+            const specificArea = specificAreas[0];
+            
+            console.log('Found specific area within city-state:', specificArea.name, 'type:', specificArea.type);
+            city = specificArea.name;
+            // Keep country for context (e.g., "Tampines, Singapore")
+            state = ''; // Clear state to avoid triple names
+          } else {
+            // No specific area found, show just the city-state name
+            country = '';
+          }
+        }
+      }
+      
       // Filter out Israeli districts before assembling final location
       if (country === 'Israel' && state && state.toLowerCase().includes('district')) {
         state = '';
       }
       
       const parts = [city, state, country].filter(Boolean);
-      console.log('Nominatim final parts:', parts);
+      console.log('Nominatim final parts (most specific):', parts);
       return parts.join(", ");
   }
   
