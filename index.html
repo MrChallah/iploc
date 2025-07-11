@@ -66,7 +66,7 @@
   }
   
   .location-row {
-    margin-top: -2.3px;
+    margin-top: -2.4px;
   }
   
   .weather-row {
@@ -81,7 +81,7 @@
         <img id="country-flag" class="country-flag" style="width: 20px; height: 15px; border-radius: 2px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);" alt="Location" />
         <i id="location-fallback" class="fa-solid fa-location-dot info-icon icon-text-shadow" style="display: none;"></i>
       </span>
-      <span id="place">Waiting…</span>
+      <span id="place">Waiting for GPS…</span>
     </div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
@@ -94,13 +94,13 @@
       <span id="weather">--°C</span>
     </div>
   </div>
-  
+
   <script>
   const placeEl = document.getElementById('place');
   const weatherEl = document.getElementById('weather');
   const GOOGLE_GEO_KEY = 'YOUR_KEY';
   
-  let lastKnownLocation = null;
+  let lastKnownGPSLocation = null;
   let gpsSuccessful = false;
   let gpsAttempted = false;
   let consecutiveGPSFailures = 0;
@@ -122,25 +122,6 @@
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   
-  // Detect if we're in an app environment (like PRISM Live)
-  const isInApp = !window.location.href.startsWith('http') || 
-                  window.navigator.standalone === true ||
-                  window.matchMedia('(display-mode: standalone)').matches ||
-                  document.referrer.includes('android-app://') ||
-                  /wv|WebView/i.test(navigator.userAgent) ||
-                  navigator.userAgent.includes('PRISM') ||
-                  navigator.userAgent.includes('Live') ||
-                  navigator.userAgent.includes('NAVER') ||
-                  window.location.protocol === 'file:' ||
-                  window.location.hostname === '' ||
-                  !window.location.hostname ||
-                  window.location.href.includes('prism') ||
-                  window.location.href.includes('live') ||
-                  // More aggressive detection for streaming apps
-                  window.outerWidth === window.innerWidth ||
-                  window.chrome === undefined ||
-                  !window.chrome;
-  
   function tick(){
     const now = new Date();
     const dateString = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -151,29 +132,6 @@
   tick(); 
   // Ensure time updates every second regardless of network issues
   setInterval(tick, 1000);
-  
-  async function reverseGeocode(lat, lon){
-    // Detect if we're running locally (file:// protocol) and prioritize Nominatim
-    const isLocalFile = window.location.protocol === 'file:';
-    
-    if (isLocalFile) {
-      console.log('Local file detected, using Nominatim as primary geocoder');
-      try {
-        return await reverseGeocodeWithNominatim(lat, lon);
-      } catch (nominatimError) {
-        console.warn('Nominatim failed, trying Google as fallback:', nominatimError);
-        return await reverseGeocodeWithGoogle(lat, lon);
-      }
-    }
-    
-    // Try Google first for hosted environments
-    try {
-      return await reverseGeocodeWithGoogle(lat, lon);
-    } catch (error) {
-      console.warn('Google geocoding failed, fallback to Nominatim:', error.message);
-      return await reverseGeocodeWithNominatim(lat, lon);
-    }
-  }
   
   // Enhanced fetch with retry logic
   async function fetchWithRetry(url, options = {}, retryCount = 0) {
@@ -232,6 +190,24 @@
     }
   }
   
+  async function reverseGeocode(lat, lon){
+    // Detect if we're running locally (file:// protocol) and prioritize Nominatim
+    const isLocalFile = window.location.protocol === 'file:';
+    
+    if (isLocalFile) {
+      console.log('Local file detected, using Nominatim as primary geocoder');
+        return await reverseGeocodeWithNominatim(lat, lon);
+    }
+    
+    // Try Google first for hosted environments
+    try {
+      return await reverseGeocodeWithGoogle(lat, lon);
+    } catch (error) {
+      console.warn('Google geocoding failed, falling back to Nominatim:', error.message);
+      return await reverseGeocodeWithNominatim(lat, lon);
+    }
+  }
+  
   async function reverseGeocodeWithGoogle(lat, lon) {
     const res = await fetchWithRetry(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=locality|administrative_area_level_2|administrative_area_level_1|country`);
       const data = await res.json();
@@ -247,18 +223,18 @@
         for (let resultIndex = 0; resultIndex < Math.min(data.results.length, 3); resultIndex++) {
           const result = data.results[resultIndex];
           const components = result.address_components;
-        
-        components.forEach(component => {
-          const types = component.types;
-          const name = component.long_name;
           
-          // Check if location is in Japan
-          if (types.includes('country') && (component.short_name === 'JP' || name === 'Japan')) {
-            isJapan = true;
-          }
-          
+          components.forEach(component => {
+            const types = component.types;
+            const name = component.long_name;
+            
+            // Check if location is in Japan
+            if (types.includes('country') && (component.short_name === 'JP' || name === 'Japan')) {
+              isJapan = true;
+            }
+            
             // Collect potential city names with improved priority for specific locations
-          if (types.includes('locality')) {
+            if (types.includes('locality')) {
               // Highest priority: actual localities (specific places like Punta Cana)
               allCities.push({ name, priority: 1, type: 'locality', source: `result_${resultIndex}` });
             } else if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
@@ -270,18 +246,18 @@
             } else if (types.includes('administrative_area_level_3')) {
               // Fourth priority: more specific administrative areas
               allCities.push({ name, priority: 4, type: 'admin_level_3', source: `result_${resultIndex}` });
-          }
-          
+            }
+            
             // Collect state/region names
-          if (types.includes('administrative_area_level_1')) {
+            if (types.includes('administrative_area_level_1')) {
               allStates.push({ name, source: `result_${resultIndex}` });
             }
             
             // Set country (take first one found)
             if (types.includes('country') && !country) {
-            country = name;
-          }
-        });
+              country = name;
+            }
+          });
         }
         
         console.log('All collected cities:', allCities);
@@ -308,7 +284,7 @@
                                 name.includes('Region') || name.includes('Prefecture') ||
                                 name.includes('Municipality') || name.includes('Province') ||
                                 name.includes('-dong') || name.includes('dong,') || 
-                                name.includes('(') || name.includes(')') ||
+                                   name.includes('(') || name.includes(')') ||
                                 name.includes('Ward');
           return !isGenericAdmin;
         });
@@ -316,7 +292,7 @@
         // Sort by priority (lower number = higher priority) to get the most specific location
         const citiesToConsider = filteredCities.length > 0 ? filteredCities : uniqueCities;
         citiesToConsider.sort((a, b) => a.priority - b.priority);
-          
+        
         // Get the best state (most common one)
         const stateNames = allStates.map(s => s.name);
         const mostCommonState = stateNames.length > 0 ? stateNames[0] : '';
@@ -360,10 +336,10 @@
                 finalState = '';
                 console.log('Excluding generic state for specificity:', mostCommonState);
               }
-              }
             }
           }
-          
+        }
+        
         // If still no city, try administrative areas as backup
         if (!finalCity && mostCommonState) {
           finalCity = mostCommonState;
@@ -384,14 +360,14 @@
           // Special handling for city-states where city equals country
           if (cityLower === countryLower) {
             console.log('Detected city-state redundancy:', finalCity, '==', country);
-          
+            
             // For city-states like Singapore, check if we have a more specific area/neighborhood
             // Look for the most specific location that isn't the country name
             const specificAreas = citiesToConsider.filter(cityObj => 
               cityObj.name.toLowerCase() !== countryLower && 
               cityObj.priority <= 4 // Only consider specific areas, not generic administrative regions
             );
-          
+            
             if (specificAreas.length > 0) {
               // Sort by priority to get the most specific area
               specificAreas.sort((a, b) => a.priority - b.priority);
@@ -401,7 +377,7 @@
               finalCity = specificArea.name;
               // Keep country for context (e.g., "Tampines, Singapore")
               finalState = ''; // Clear state to avoid triple names
-          } else {
+            } else {
               // No specific area found, show just the city-state name
               country = '';
             }
@@ -1085,6 +1061,7 @@
       let isWindy = windSpeed > 18; // Lowered from 20 to 10 km/h
       let isVeryWindy = windSpeed > 35; // Lowered from 40 to 25 km/h
       
+      
       // Add debug logging for wind detection
       console.log('Wind speed:', windSpeed, 'km/h, isWindy:', isWindy, 'isVeryWindy:', isVeryWindy);
       
@@ -1139,7 +1116,7 @@
       
       // Thunderstorm enhancements
       if (j.current.weather_code >= 95 && j.current.weather_code <= 99) {
-        if (isVeryWindy) {
+        if (windSpeed > 40) {
           condition = 'HEAVY_THUNDERSTORM';
           desc = 'Severe Thunderstorm';
         } else if (windSpeed > 25) {
@@ -1203,6 +1180,7 @@
         lat: lat,
         lon: lon
       };
+      lastWeatherTimestamp = Date.now();
       
       // Set final weather text
       weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
@@ -1224,7 +1202,7 @@
       
       // Only replace the icon after the new one has loaded to prevent blinking
       imgElement.onload = function() {
-        // Preserve secondary effects (heat-waves and wind-waves)
+        // Preserve secondary effects (heat-waves and wind-waves) before clearing
         const heatWaves = weatherIcon.querySelector('#heat-waves');
         const windWaves = weatherIcon.querySelector('#wind-waves');
         
@@ -1240,7 +1218,8 @@
           weatherIcon.appendChild(windWaves);
         }
         
-        // Handle wind waves logic inside onload to ensure elements exist
+        // Now handle wind-waves logic after elements are restored
+        // Show wind waves if windy conditions
         const windWavesElement = document.getElementById('wind-waves');
         console.log('Wind waves element found:', !!windWavesElement, 'isWindy:', isWindy);
         
@@ -1290,13 +1269,12 @@
             console.log('Wind waves display set to inline-block, src:', windWavesElement.src);
             
             // Position wind waves - if no heat, center it; if heat, keep it to the right
-            const heatWavesElement = document.getElementById('heat-waves');
             if (isHot) {
               windWavesElement.classList.remove('only-wind');
               console.log('Wind waves positioned with heat waves');
               // Update heat waves to show they're with wind
-              if (heatWavesElement) {
-                heatWavesElement.classList.add('with-wind');
+              if (heatWaves) {
+                heatWaves.classList.add('with-wind');
               }
             } else {
               windWavesElement.classList.add('only-wind');
@@ -1314,9 +1292,8 @@
             }
             
             // Remove wind class from heat waves
-            const heatWavesElement = document.getElementById('heat-waves');
-            if (heatWavesElement) {
-              heatWavesElement.classList.remove('with-wind');
+            if (heatWaves) {
+              heatWaves.classList.remove('with-wind');
             }
           }
         } else {
@@ -1384,7 +1361,7 @@
           // Update secondary effects with cached data after elements are restored
           const restoredHeatWaves = document.getElementById('heat-waves');
           const restoredWindWaves = document.getElementById('wind-waves');
-        
+          
           if (restoredHeatWaves) {
             restoredHeatWaves.style.display = cached.isHot ? 'inline-block' : 'none';
             if (cached.isHot && cached.isWindy) {
@@ -1393,7 +1370,7 @@
               restoredHeatWaves.classList.remove('with-wind');
             }
           }
-        
+          
           if (restoredWindWaves) {
             restoredWindWaves.style.display = cached.isWindy ? 'inline-block' : 'none';
             if (cached.isWindy) {
@@ -1408,8 +1385,8 @@
           }
         };
         
-        // Add the image element to DOM
-        weatherIcon.appendChild(imgElement);
+        // Start loading the cached weather icon
+        imgElement.src = iconUrls.primary;
       } else {
         // Only show "Weather N/A" if no cached data is available at all
         weatherEl.textContent = "Weather N/A";
@@ -1429,188 +1406,15 @@
     return null;
   }
   
-  // Method 1.5: Try PRISM Live location data
-  function getPRISMLocation() {
-    // Check for various possible PRISM Live location interfaces
-    if (window.prismLocationData && window.prismLocationData.latitude && window.prismLocationData.longitude) {
-      return {
-        lat: window.prismLocationData.latitude,
-        lon: window.prismLocationData.longitude,
-        source: "PRISM Live GPS"
-      };
-    }
-    
-    // Alternative PRISM Live interfaces
-    if (window.prism && window.prism.location && window.prism.location.latitude && window.prism.location.longitude) {
-      return {
-        lat: window.prism.location.latitude,
-        lon: window.prism.location.longitude,
-        source: "PRISM Live GPS"
-      };
-    }
-    
-    // Check for PRISM Live GPS data in different format
-    if (window.PRISM_GPS && window.PRISM_GPS.lat && window.PRISM_GPS.lon) {
-      return {
-        lat: window.PRISM_GPS.lat,
-        lon: window.PRISM_GPS.lon,
-        source: "PRISM Live GPS"
-      };
-    }
-    
-    // Check webkit message handlers (common in mobile apps)
-    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.locationHandler) {
-      // This would require a callback mechanism, but we can try to access cached data
-      if (window.webkit.lastKnownLocation && window.webkit.lastKnownLocation.latitude && window.webkit.lastKnownLocation.longitude) {
-        return {
-          lat: window.webkit.lastKnownLocation.latitude,
-          lon: window.webkit.lastKnownLocation.longitude,
-          source: "PRISM Live GPS (WebKit)"
-        };
-      }
-    }
-    
-    // Check for Android interface
-    if (window.Android && window.Android.getLatitude && window.Android.getLongitude) {
-      try {
-        const lat = parseFloat(window.Android.getLatitude());
-        const lon = parseFloat(window.Android.getLongitude());
-        if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
-          return {
-            lat: lat,
-            lon: lon,
-            source: "PRISM Live GPS (Android)"
-          };
-        }
-      } catch (e) {
-        console.warn('Android location interface failed:', e);
-      }
-    }
-    
-    return null;
-  }
-  
-  // Method 1.6: Actively request location from PRISM Live
-  function requestPRISMLocation() {
-    return new Promise((resolve, reject) => {
-      let resolved = false;
-      
-      // Set timeout to avoid hanging
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          reject(new Error('PRISM Live location request timeout'));
-        }
-      }, 5000);
-      
-      // Try WebKit message handler
-      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.locationHandler) {
-        try {
-          window.webkit.messageHandlers.locationHandler.postMessage({action: 'getCurrentLocation'});
-          
-          // Set up listener for response
-          window.prismLocationCallback = function(locationData) {
-            if (!resolved && locationData && locationData.latitude && locationData.longitude) {
-              resolved = true;
-              clearTimeout(timeout);
-              resolve({
-                lat: locationData.latitude,
-                lon: locationData.longitude,
-                source: "PRISM Live GPS (Requested)"
-              });
-            }
-          };
-          
-          // Also check if location is immediately available
-          setTimeout(() => {
-            const location = getPRISMLocation();
-            if (!resolved && location) {
-              resolved = true;
-              clearTimeout(timeout);
-              resolve(location);
-            }
-          }, 100);
-          
-        } catch (e) {
-          console.warn('WebKit location request failed:', e);
-        }
-      }
-      
-      // Try Android interface
-      if (window.Android && window.Android.requestLocation) {
-        try {
-          window.Android.requestLocation();
-          
-          // Check for location after a brief delay
-          setTimeout(() => {
-            const location = getPRISMLocation();
-            if (!resolved && location) {
-              resolved = true;
-              clearTimeout(timeout);
-              resolve(location);
-            }
-          }, 1000);
-          
-        } catch (e) {
-          console.warn('Android location request failed:', e);
-        }
-      }
-      
-      // Try posting messages to parent frame (if in iframe)
-      try {
-        window.parent.postMessage({type: 'requestLocation'}, '*');
-        window.postMessage({type: 'requestLocation'}, '*');
-        
-        // Listen for response
-        const messageListener = function(event) {
-          if (!resolved && event.data && event.data.type === 'locationResponse' && event.data.latitude && event.data.longitude) {
-            resolved = true;
-            clearTimeout(timeout);
-            window.removeEventListener('message', messageListener);
-            resolve({
-              lat: event.data.latitude,
-              lon: event.data.longitude,
-              source: "PRISM Live GPS (Message)"
-            });
-          }
-        };
-        window.addEventListener('message', messageListener);
-        
-      } catch (e) {
-        console.warn('Message-based location request failed:', e);
-      }
-      
-      // If no specific interface worked, reject after timeout
-      setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          reject(new Error('No PRISM Live location interface found'));
-        }
-      }, 2000);
-    });
-  }
-  
   // Method 2: Try browser GPS
   function getBrowserGPS(showLoadingMessages = true) {
     return new Promise((resolve, reject) => {
-      console.log('getBrowserGPS called, isInApp:', isInApp, 'showLoadingMessages:', showLoadingMessages);
-      
-      // Skip GPS entirely in app environments
-      if (isInApp) {
-        console.log('GPS skipped - in app environment');
-        reject(new Error('GPS skipped - in app environment'));
-        return;
-      }
-      
       if (!navigator.geolocation) {
-        console.log('Geolocation not supported');
         reject(new Error('Geolocation not supported'));
         return;
       }
   
       if (showLoadingMessages) {
-        console.log('Setting GPS loading message');
         placeEl.textContent = "Grabbing GPS Location...";
       }
       
@@ -1640,148 +1444,6 @@
     });
   }
   
-  // Method 3: Fallback to IP location with multiple services
-  async function getLocationFromGoogle(){
-    try {
-      const res = await fetchWithRetry("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ considerIp: true })
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Google Geolocation API failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.error) {
-        throw new Error(`Google Geolocation API error: ${data.error.message}`);
-      }
-      
-      return {
-        lat: data.location.lat,
-        lon: data.location.lng,
-        source: "IP Location (Google)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('Google IP location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  // Alternative IP location services
-  async function getIPLocationFromIpApi() {
-    try {
-      const res = await fetchWithRetry('https://ip-api.com/json/?fields=status,lat,lon');
-      
-      if (!res.ok) {
-        throw new Error(`IP-API failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.status !== 'success') {
-        throw new Error('IP-API request failed');
-      }
-      
-      return {
-        lat: data.lat,
-        lon: data.lon,
-        source: "IP Location (IP-API)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('IP-API location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  async function getIPLocationFromIpInfo() {
-    try {
-      const res = await fetchWithRetry('https://ipinfo.io/json');
-      
-      if (!res.ok) {
-        throw new Error(`IPInfo failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (!data.loc) {
-        throw new Error('IPInfo request failed - no location data');
-      }
-      
-      const [lat, lon] = data.loc.split(',').map(Number);
-      return {
-        lat: lat,
-        lon: lon,
-        source: "IP Location (IPInfo)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('IPInfo location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  async function getIPLocationFromIpApi2() {
-    try {
-      const res = await fetchWithRetry('https://ipapi.co/json/');
-      
-      if (!res.ok) {
-        throw new Error(`IPAPI.co failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.error) {
-        throw new Error(`IPAPI.co error: ${data.reason}`);
-      }
-      
-      return {
-        lat: data.latitude,
-        lon: data.longitude,
-        source: "IP Location (IPAPI.co)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('IPAPI.co location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  // Try multiple IP location services in order
-  async function getIPLocation() {
-    const services = [
-      getLocationFromGoogle,
-      getIPLocationFromIpApi,
-      getIPLocationFromIpInfo,
-      getIPLocationFromIpApi2
-    ];
-
-    for (const service of services) {
-      try {
-        const result = await service();
-        console.log('IP location success:', result.source);
-        return result;
-      } catch (error) {
-        console.warn('IP location service failed, trying next...', error);
-        continue;
-      }
-    }
-    
-    throw new Error('All IP location services failed');
-  }
-  
   async function updateLocationAndWeather(showLoadingMessages = true){
     try {
       let locationData = null;
@@ -1789,22 +1451,8 @@
       // Try Method 1: IRL Pro location data
       locationData = getIRLProLocation();
       
-      // Try Method 1.5: Try PRISM Live location data
+      // Try Method 2: Browser GPS - Allow retries even after previous failures
       if (!locationData) {
-        locationData = getPRISMLocation();
-      }
-      
-      // Try Method 1.6: Actively request location from PRISM Live
-      if (!locationData) {
-        try {
-          locationData = await requestPRISMLocation();
-        } catch (prismError) {
-          console.warn('PRISM Live location request failed:', prismError);
-        }
-      }
-      
-      // Try Method 2: Browser GPS - Allow retries even after previous failures (but skip in app environments)
-      if (!locationData && !isInApp) {
         try {
           locationData = await getBrowserGPS(showLoadingMessages);
           gpsAttempted = true;
@@ -1814,32 +1462,20 @@
         }
       }
       
-      // Try Method 3: IP location fallback
-      if (!locationData) {
-        if (showLoadingMessages) {
-          placeEl.textContent = "Loading location...";
-        }
-        try {
-          locationData = await getIPLocation();
-        } catch (ipError) {
-          console.error('All IP location services failed:', ipError);
-        }
-      }
-      
-      // Use last known location as final fallback (expanded conditions)
-      if (!locationData && lastKnownLocation) {
+      // Use last known GPS location as fallback (expanded conditions)
+      if (!locationData && lastKnownGPSLocation) {
         const now = Date.now();
-        const locationAge = now - (lastKnownLocation.timestamp || 0);
+        const locationAge = now - (lastKnownGPSLocation.timestamp || 0);
         
         // Use shorter cache time if GPS is working well (more responsive to location changes)
         const maxCacheAge = gpsSuccessful ? 300000 : 600000; // 5 minutes if GPS works, 10 minutes otherwise
         
-        // Use cached location if it's recent
+        // Use cached GPS location if it's recent
         if (locationAge < maxCacheAge) {
-          locationData = lastKnownLocation;
-          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes, GPS successful:', gpsSuccessful, ')');
+          locationData = lastKnownGPSLocation;
+          console.log('Using cached GPS location (age:', Math.round(locationAge/60000), 'minutes, GPS successful:', gpsSuccessful, ')');
         } else {
-          console.log('Cached location expired (age:', Math.round(locationAge/60000), 'minutes, max:', Math.round(maxCacheAge/60000), 'minutes)');
+          console.log('Cached GPS location expired (age:', Math.round(locationAge/60000), 'minutes, max:', Math.round(maxCacheAge/60000), 'minutes)');
         }
       }
       
@@ -1847,9 +1483,9 @@
       if (locationData) {
         // Check if this is a significantly different location (more than ~1km away)
         let isSignificantMove = false;
-        if (lastKnownLocation && lastKnownLocation.lat && lastKnownLocation.lon) {
-          const latDiff = Math.abs(locationData.lat - lastKnownLocation.lat);
-          const lonDiff = Math.abs(locationData.lon - lastKnownLocation.lon);
+        if (lastKnownGPSLocation && lastKnownGPSLocation.lat && lastKnownGPSLocation.lon) {
+          const latDiff = Math.abs(locationData.lat - lastKnownGPSLocation.lat);
+          const lonDiff = Math.abs(locationData.lon - lastKnownGPSLocation.lon);
           const approximateDistance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff) * 111000; // Rough conversion to meters
           
           if (approximateDistance > 1000) { // More than 1km
@@ -1862,8 +1498,12 @@
           }
         }
         
-        lastKnownLocation = locationData;
-        lastKnownLocation.timestamp = Date.now();
+        // Only save GPS locations to cache (not IRL Pro data)
+        if (locationData.source.includes('GPS')) {
+          lastKnownGPSLocation = locationData;
+          lastKnownGPSLocation.timestamp = Date.now();
+        }
+        
         if (showLoadingMessages) {
           placeEl.textContent = "Loading location...";
         }
@@ -1879,12 +1519,12 @@
           // Update country flag after successful geocoding
           updateCountryFlag(window.currentCountryName, window.currentCountryCode);
           
-          console.log('Location updated:', locationData.source, label, isSignificantMove ? '(significant move detected)' : '');
+          console.log('Location updated:', locationData.source, label);
         } catch (geocodeError) {
           console.error('Geocoding failed:', geocodeError);
           
-          // Use cached location name if available, but show a warning for significant moves
-          if (lastLocationName && !isSignificantMove) {
+          // Use cached location name if available
+          if (lastLocationName) {
             console.log('Using cached location name due to geocoding failure');
             placeEl.textContent = lastLocationName;
             
@@ -1893,8 +1533,8 @@
               updateCountryFlag(window.currentCountryName, window.currentCountryCode);
             }
           } else {
-            // For significant moves or no cache, show loading state
-            placeEl.textContent = isSignificantMove ? "🚗 Getting new location..." : "Location N/A";
+            // Only show "Location N/A" if no cached name is available
+            placeEl.textContent = "Location N/A";
             
             // Show fallback location icon when no location data
             const flagImg = document.getElementById('country-flag');
@@ -1909,11 +1549,11 @@
         // Always try to fetch weather regardless of geocoding success
         fetchWeather(locationData.lat, locationData.lon);
       } else {
-        // Only show "Location N/A" if we truly have no fallback options
-        console.error('No location data available from any source');
+        // During silent refreshes, don't immediately show "GPS N/A" - keep existing display
         if (showLoadingMessages) {
-          placeEl.textContent = "Location N/A";
-          weatherEl.textContent = "Weather N/A";
+          // Only show "GPS N/A" during initial load or user-initiated refresh
+          console.error('No GPS data available from any source');
+          placeEl.textContent = "GPS N/A";
           
           // Show fallback location icon when no location data
           const flagImg = document.getElementById('country-flag');
@@ -1922,8 +1562,15 @@
             flagImg.style.display = 'none';
             fallbackIcon.style.display = 'inline-block';
           }
+          
+          // Don't immediately clear weather - let the weather fetch handle caching
+          if (!lastWeatherData) {
+            weatherEl.textContent = "Weather N/A";
+          }
+        } else {
+          // During silent refresh failures, just log the issue but keep existing display
+          console.log('Silent location refresh failed, keeping existing display');
         }
-        // Don't update display during silent refreshes to avoid flashing "N/A"
       }
       
     } catch (e) {
@@ -1940,8 +1587,8 @@
             updateCountryFlag(window.currentCountryName, window.currentCountryCode);
           }
         } else {
-          // Only show "Location N/A" if no cached name is available
-          placeEl.textContent = "Location N/A";
+          // Only show "GPS N/A" if no cached name is available
+          placeEl.textContent = "GPS N/A";
           
           // Show fallback location icon when no location data
           const flagImg = document.getElementById('country-flag');
@@ -2000,7 +1647,7 @@
     console.log('🔄 Clearing all location caches...');
     
     // Clear all cached location data
-    lastKnownLocation = null;
+    lastKnownGPSLocation = null;
     lastLocationName = null;
     lastLocationTimestamp = 0;
     lastWeatherData = null;
@@ -2048,8 +1695,8 @@
     console.log('🔄 Forcing location refresh...');
     
     // Expire current location cache to force new lookup
-    if (lastKnownLocation) {
-      lastKnownLocation.timestamp = Date.now() - 700000; // Make it older than 10 minutes
+    if (lastKnownGPSLocation) {
+      lastKnownGPSLocation.timestamp = Date.now() - 700000; // Make it older than 10 minutes
     }
     
     // Reset GPS state to allow fresh attempts
