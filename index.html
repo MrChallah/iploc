@@ -1984,8 +1984,8 @@
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
   
-  // Auto-refresh every 55 seconds (without loading messages)
-  setInterval(() => updateLocationAndWeather(false), 55000);
+  // Auto-refresh every 180 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 180000);
   
   // Additional more frequent check during connection issues
   setInterval(() => {
