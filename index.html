@@ -175,6 +175,45 @@
     }
   }
   
+  // Helper function to filter location parts based on word count rules
+  function filterLocationByWordCount(city, state, country) {
+    // Count words in each component (split by spaces and filter out empty strings)
+    const cityWords = city ? city.split(/\s+/).filter(word => word.length > 0).length : 0;
+    const stateWords = state ? state.split(/\s+/).filter(word => word.length > 0).length : 0;
+    const countryWords = country ? country.split(/\s+/).filter(word => word.length > 0).length : 0;
+    
+    console.log('Word count analysis:', {
+      city: city, cityWords: cityWords,
+      state: state, stateWords: stateWords, 
+      country: country, countryWords: countryWords
+    });
+    
+    // Apply the filtering rules:
+    // Hide state if:
+    // 1. City has exactly 2 words AND state has 2+ words AND country has 2+ words, OR
+    // 2. City has 3+ words (regardless of other word counts)
+    
+    let filteredState = state;
+    
+    if (city && state && country) {
+      if (cityWords >= 3) {
+        console.log('Hiding state because city has 3+ words:', cityWords);
+        filteredState = '';
+      } else if (cityWords === 2 && stateWords >= 2 && countryWords >= 2) {
+        console.log('Hiding state due to word count rule: city=2 words, state>=2 words, country>=2 words');
+        filteredState = '';
+      } else {
+        console.log('Keeping state - conditions not met for hiding');
+      }
+    }
+    
+    // Build final parts array with filtered state
+    const parts = [city, filteredState, country].filter(Boolean);
+    console.log('Final location parts after word count filtering:', parts);
+    
+    return parts.join(", ");
+  }
+  
   // Enhanced fetch with retry logic
   async function fetchWithRetry(url, options = {}, retryCount = 0) {
     let timeoutId; // Move declaration to function scope
@@ -408,12 +447,7 @@
           }
         }
         
-        // Build final address string
-        const parts = [finalCity, finalState, country].filter(Boolean);
-        
-        console.log('Google final location parts (most specific):', parts);
-        
-        // Extract country code for flag display
+        // Extract country code for flag display before filtering
         let countryCode = null;
         if (data.results && data.results.length > 0) {
           for (const result of data.results) {
@@ -431,7 +465,10 @@
         window.currentCountryName = country;
         window.currentCountryCode = countryCode;
         
-        return parts.join(", ");
+        console.log('Google geocoding - before word count filtering:', finalCity, finalState, country);
+        
+        // Apply word count filtering rules
+        return filterLocationByWordCount(finalCity, finalState, country);
       }
       
       // Check for API quota/permission issues
@@ -486,6 +523,12 @@
             console.log('Detected city-state redundancy in formatted address:', secondLastPart, '==', lastPart);
             filteredParts.pop(); // Remove the duplicate
           }
+        }
+        
+        // For fallback formatted address, apply word count filtering if we have 3 parts (city, state, country)
+        if (filteredParts.length === 3) {
+          console.log('Google fallback - applying word count filtering to formatted address parts:', filteredParts);
+          return filterLocationByWordCount(filteredParts[0], filteredParts[1], filteredParts[2]);
         }
         
         return filteredParts.join(", ");
@@ -664,14 +707,14 @@
         state = '';
       }
       
-      const parts = [city, state, country].filter(Boolean);
-      console.log('Nominatim final parts (most specific):', parts);
-      
-      // Store country info for flag display
+      // Store country info for flag display before filtering
       window.currentCountryName = country;
       window.currentCountryCode = addr.country_code ? addr.country_code.toUpperCase() : null;
       
-      return parts.join(", ");
+      console.log('Nominatim geocoding - before word count filtering:', city, state, country);
+      
+      // Apply word count filtering rules
+      return filterLocationByWordCount(city, state, country);
   }
   
   // Google Weather condition mapping for Open-Meteo weather codes
@@ -1984,8 +2027,8 @@
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
   
-  // Auto-refresh every 180 seconds (without loading messages)
-  setInterval(() => updateLocationAndWeather(false), 180000);
+  // Auto-refresh every 55 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 55000);
   
   // Additional more frequent check during connection issues
   setInterval(() => {
