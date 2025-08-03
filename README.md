@@ -337,7 +337,7 @@ The overlays are automatically updated on the GitHub Pages hosting, so you'll al
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ### MIT License Summary
 
