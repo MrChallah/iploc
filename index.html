@@ -11,6 +11,99 @@
   .info-icon {
     width: 30px;
     text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+  }
+  
+  /* Dynamic analog clock icon */
+  .analog-clock {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border: 0; /* remove white stroke to prevent halo */
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    filter: none;
+  }
+  .analog-clock::before {
+    content: "";
+    position: absolute;
+    inset: 5px; /* draw ring slightly inside to avoid outer-edge AA */
+    border: 0;  /* no white border */
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    box-shadow: 0 0 0 2.6px #000; /* crisp black ring only */
+    filter: drop-shadow(0 0 1.4px #000);
+  }
+  .analog-clock .center-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: -1px -1px 0 #000, 1px -1px 0 #000;
+  }
+  .analog-clock .clock-hand {
+    position: absolute;
+    left: 50%;
+    bottom: 50%;
+    transform-origin: bottom center;
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: none;
+    z-index: 1;
+  }
+  .analog-clock .clock-hand.hour { width: 2.5px; height: 6.25px; background: #000000; }
+  .analog-clock .clock-hand.hour::before {
+    content: "";
+    position: absolute;
+    inset: -0.4px;
+    border: 0.8px solid #000;
+    border-radius: 1px;
+    background: transparent;
+    pointer-events: none;
+  }
+  .analog-clock .clock-hand.minute { width: 2.5px; height: 8.5px; background: #000000; }
+  .analog-clock .clock-hand.minute::before {
+    content: "";
+    position: absolute;
+    inset: -0.4px;
+    border: 0.8px solid #000;
+    border-radius: 1px;
+    background: transparent;
+    pointer-events: none;
+  }
+  .analog-clock .clock-hand.second { width: 3.8px; height: 9.5px; background: #ff0000;}
+  .analog-clock .clock-hand.second::before {
+    content: "";
+    position: absolute;
+    inset: -0.05px;
+    border: 0.8px solid #000;
+    border-radius: 1px;
+    background: transparent;
+    pointer-events: none;
+  }
+  .analog-clock .center-dot {
+    z-index: 2;
+    width: 4px;
+    height: 4px;
+    background: #cec6c6 !important;
+    box-shadow: none !important;
+  }
+  .analog-clock::after {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.514);
+    z-index: 0; /* stays behind the hands */
   }
   
   .weather-icon {
@@ -76,7 +169,17 @@
   </style></head><body class="text-white">
   
   <div id="info" class="position-absolute top-0 start-0 d-flex flex-column gap-1 rounded" style="padding:8px;">
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
+      <span class="info-icon me-2">
+        <div id="analog-clock" class="analog-clock">
+          <div id="clock-hour-hand" class="clock-hand hour"></div>
+          <div id="clock-minute-hand" class="clock-hand minute"></div>
+          <div id="clock-second-hand" class="clock-hand second"></div>
+          <div class="center-dot"></div>
+        </div>
+      </span>
+      <span id="time">--:--:--</span>
+    </div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap location-row">
       <span class="info-icon me-2">
         <img id="country-flag" class="country-flag" style="width: 20px; height: 15px; border-radius: 2px; transform: translateY(-2px); filter: drop-shadow(-1.8px -1.8px 0 #000) drop-shadow(1.8px -1.8px 0 #000) drop-shadow(-1.8px 1.8px 0 #000) drop-shadow(1.8px 1.8px 0 #000) drop-shadow(0 0 6px #000);" alt="Location" />
@@ -142,12 +245,32 @@
                   window.chrome === undefined ||
                   !window.chrome;
   
+  // Update analog clock hands with given hours/minutes/seconds
+  function setAnalogClockHands(hours24, minutes, seconds) {
+    const hourEl = document.getElementById('clock-hour-hand');
+    const minuteEl = document.getElementById('clock-minute-hand');
+    const secondEl = document.getElementById('clock-second-hand');
+    if (!hourEl || !minuteEl || !secondEl) return;
+
+    const hours = hours24 % 12;
+    const hourDeg = (hours * 30) + (minutes * 0.5); // 360/12 = 30, plus minute contribution
+    const minuteDeg = (minutes * 6) + (seconds * 0.1); // 360/60 = 6
+    const secondDeg = seconds * 6;
+
+    hourEl.style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+    minuteEl.style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+    secondEl.style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+  }
+
   function tick(){
     const now = new Date();
     const dateString = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
     const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     
     document.getElementById('time').textContent = `${dateString}, ${timeString}`;
+    
+    // Update analog clock hands
+    setAnalogClockHands(now.getHours(), now.getMinutes(), now.getSeconds());
   }
   tick(); 
   // Ensure time updates every second regardless of network issues
