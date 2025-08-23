@@ -17,94 +17,80 @@
     vertical-align: middle;
   }
   
-  /* Dynamic analog clock icon */
-  .analog-clock {
-    position: relative;
-    width: 30px;
-    height: 30px;
-    border: 0; /* remove white stroke to prevent halo */
-    border-radius: 50%;
-    background: transparent;
-    box-shadow: none;
-    filter: none;
-  }
-  .analog-clock::before {
-    content: "";
-    position: absolute;
-    inset: 5px; /* draw ring slightly inside to avoid outer-edge AA */
-    border: 0;  /* no white border */
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-    box-shadow: 0 0 0 2.6px #000; /* crisp black ring only */
-    filter: drop-shadow(0 0 1.4px #000);
-  }
-  .analog-clock .center-dot {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 3px;
-    height: 3px;
-    background: #fff;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: -1px -1px 0 #000, 1px -1px 0 #000;
-  }
-  .analog-clock .clock-hand {
-    position: absolute;
-    left: 50%;
-    bottom: 50%;
-    transform-origin: bottom center;
-    background: #fff;
-    border-radius: 2px;
-    box-shadow: none;
-    z-index: 1;
-  }
-  .analog-clock .clock-hand.hour { width: 2.5px; height: 6.25px; background: #000000; }
-  .analog-clock .clock-hand.hour::before {
-    content: "";
-    position: absolute;
-    inset: -0.4px;
-    border: 0.8px solid #000;
-    border-radius: 1px;
-    background: transparent;
-    pointer-events: none;
-  }
-  .analog-clock .clock-hand.minute { width: 2.5px; height: 8.5px; background: #000000; }
-  .analog-clock .clock-hand.minute::before {
-    content: "";
-    position: absolute;
-    inset: -0.4px;
-    border: 0.8px solid #000;
-    border-radius: 1px;
-    background: transparent;
-    pointer-events: none;
-  }
-  .analog-clock .clock-hand.second { width: 3.8px; height: 9.5px; background: #ff0000;}
-  .analog-clock .clock-hand.second::before {
-    content: "";
-    position: absolute;
-    inset: -0.05px;
-    border: 0.8px solid #000;
-    border-radius: 1px;
-    background: transparent;
-    pointer-events: none;
-  }
-  .analog-clock .center-dot {
-    z-index: 2;
-    width: 4px;
-    height: 4px;
-    background: #cec6c6 !important;
-    box-shadow: none !important;
-  }
-  .analog-clock::after {
-    content: "";
-    position: absolute;
-    inset: 5px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.514);
-    z-index: 0; /* stays behind the hands */
-  }
+/* Dynamic analog clock icon */
+    .analog-clock {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      border: 0; /* remove white stroke to prevent halo */
+      border-radius: 50%;
+      background: transparent;
+      box-shadow: none;
+      filter: none;
+    }
+    .analog-clock::before {
+      content: "";
+      position: absolute;
+      inset: 5px; /* draw ring slightly inside to avoid outer-edge AA */
+      border: 0;  /* no white border */
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      box-shadow: 0 0 0 2.6px #000; /* crisp black ring only */
+      filter: drop-shadow(0 0 1.4px #000);
+    }
+    .analog-clock .center-dot {
+      display: none;
+    }
+    .analog-clock .clock-hand {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      transform-origin: bottom center;
+      background: #fff;
+      border-radius: 999px;
+      box-shadow: none;
+      z-index: 1;
+    }
+    .analog-clock .clock-hand.hour { width: 2.5px; height: 6.25px; background: #000000; }
+    .analog-clock .clock-hand.hour::before {
+      content: "";
+      position: absolute;
+      inset: -0.4px;
+      border: 0.8px solid #000;
+      border-radius: 999px;
+      background: transparent;
+      pointer-events: none;
+    }
+    .analog-clock .clock-hand.minute { width: 2.5px; height: 8.5px; background: #000000; }
+    .analog-clock .clock-hand.minute::before {
+      content: "";
+      position: absolute;
+      inset: -0.4px;
+      border: 0.8px solid #000;
+      border-radius: 999px;
+      background: transparent;
+      pointer-events: none;
+    }
+    .analog-clock .clock-hand.second { width: 3.8px; height: 10px; background: #ffffff;}
+    .analog-clock .clock-hand.second::before {
+      content: "";
+      position: absolute;
+      inset: -0.05px;
+      border: 0.8px solid #000;
+      border-radius: 999px;
+      background: transparent;
+      pointer-events: none;
+    }
+    .analog-clock .center-dot { display: none !important; }
+    .analog-clock::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.514);
+      z-index: 0; /* stays behind the hands */
+    }
   
   .weather-icon {
     position: relative;
