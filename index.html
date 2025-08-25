@@ -200,6 +200,7 @@
   // Add location name caching
   let lastLocationName = null; // Cache last successful location name
   let lastLocationTimestamp = 0; // Track when location name was last fetched
+  const LS_KEY = 'ww_last_location_v2';
   
   // Connection retry variables
   let isOnline = navigator.onLine;
@@ -271,8 +272,10 @@
       try {
         return await reverseGeocodeWithNominatim(lat, lon);
       } catch (nominatimError) {
-        console.warn('Nominatim failed, trying Google as fallback:', nominatimError);
-        return await reverseGeocodeWithGoogle(lat, lon);
+        console.warn('Nominatim failed, trying Google/Open-Meteo as fallback:', nominatimError);
+        try { return await reverseGeocodeWithGoogle(lat, lon); } catch (e2) {
+          return await reverseGeocodeWithOpenMeteo(lat, lon);
+        }
       }
     }
     
@@ -281,8 +284,28 @@
       return await reverseGeocodeWithGoogle(lat, lon);
     } catch (error) {
       console.warn('Google geocoding failed, fallback to Nominatim:', error.message);
-      return await reverseGeocodeWithNominatim(lat, lon);
+      try { return await reverseGeocodeWithNominatim(lat, lon); } catch (e2) {
+        console.warn('Nominatim failed, using Open-Meteo reverse geocoding');
+        return await reverseGeocodeWithOpenMeteo(lat, lon);
+      }
     }
+  }
+
+  async function reverseGeocodeWithOpenMeteo(lat, lon) {
+    const res = await fetchWithRetry(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en`);
+    const data = await res.json();
+    if (data && data.results && data.results.length > 0) {
+      const r = data.results[0];
+      const city = r.name || '';
+      const state = r.admin1 || '';
+      const country = r.country || '';
+      // Store country info for flag display
+      window.currentCountryName = country || null;
+      window.currentCountryCode = r.country_code ? String(r.country_code).toUpperCase() : null;
+      console.log('Open-Meteo reverse geocoding result:', { city, state, country });
+      return filterLocationByWordCount(city, state, country);
+    }
+    throw new Error('No results from Open-Meteo Reverse Geocoding');
   }
   
   // Helper function to clean administrative terms from city names
@@ -2177,6 +2200,17 @@
           // Cache successful location name
           lastLocationName = label;
           lastLocationTimestamp = Date.now();
+          // Persist to localStorage
+          try {
+            localStorage.setItem(LS_KEY, JSON.stringify({
+              label,
+              lat: locationData.lat,
+              lon: locationData.lon,
+              countryName: window.currentCountryName,
+              countryCode: window.currentCountryCode,
+              ts: Date.now()
+            }));
+          } catch {}
           
           // Update country flag after successful geocoding
           updateCountryFlag(window.currentCountryName, window.currentCountryCode);
@@ -2195,15 +2229,26 @@
               updateCountryFlag(window.currentCountryName, window.currentCountryCode);
             }
           } else {
-            // For significant moves or no cache, show loading state
-            placeEl.textContent = isSignificantMove ? "🚗 Getting new location..." : "Location N/A";
-            
-            // Show fallback location icon when no location data
-            const flagImg = document.getElementById('country-flag');
-            const fallbackIcon = document.getElementById('location-fallback');
-            if (flagImg && fallbackIcon) {
-              flagImg.style.display = 'none';
-              fallbackIcon.style.display = 'inline-block';
+            // Try persistent cache
+            try {
+              const cached = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+              if (cached && cached.label) {
+                placeEl.textContent = cached.label;
+                window.currentCountryName = cached.countryName || null;
+                window.currentCountryCode = cached.countryCode || null;
+                updateCountryFlag(window.currentCountryName, window.currentCountryCode);
+              } else {
+                // For significant moves or no cache, show loading state
+                placeEl.textContent = isSignificantMove ? "🚗 Getting new location..." : "Location N/A";
+                const flagImg = document.getElementById('country-flag');
+                const fallbackIcon = document.getElementById('location-fallback');
+                if (flagImg && fallbackIcon) { flagImg.style.display = 'none'; fallbackIcon.style.display = 'inline-block'; }
+              }
+            } catch {
+              placeEl.textContent = isSignificantMove ? "🚗 Getting new location..." : "Location N/A";
+              const flagImg = document.getElementById('country-flag');
+              const fallbackIcon = document.getElementById('location-fallback');
+              if (flagImg && fallbackIcon) { flagImg.style.display = 'none'; fallbackIcon.style.display = 'inline-block'; }
             }
           }
         }
